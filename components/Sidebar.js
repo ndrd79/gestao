@@ -9,6 +9,7 @@ const navItems = [
   { href: "/veiculos", icon: "directions_car", label: "Veículos" },
   { href: "/combustivel", icon: "local_gas_station", label: "Combustível" },
   { href: "/manutencao", icon: "build", label: "Manutenção" },
+  { href: "/despesas", icon: "receipt_long", label: "Despesas" },
   { href: "/agenda", icon: "calendar_month", label: "Agenda" },
   { href: "/relatorios", icon: "bar_chart", label: "Relatórios" },
   { href: "/usuarios", icon: "group", label: "Usuários" },
@@ -72,8 +73,8 @@ export default function Sidebar() {
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 group ${isActive
-                  ? "bg-white/20 text-accent shadow-sm"
-                  : "text-white/70 hover:bg-white/10 hover:text-white"
+                ? "bg-white/20 text-accent shadow-sm"
+                : "text-white/70 hover:bg-white/10 hover:text-white"
                 }`}
               title={collapsed ? item.label : undefined}
             >

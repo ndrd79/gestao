@@ -136,6 +136,7 @@ export default function Header() {
                                 { href: "/veiculos", icon: "directions_car", label: "Veículos" },
                                 { href: "/combustivel", icon: "local_gas_station", label: "Combustível" },
                                 { href: "/manutencao", icon: "build", label: "Manutenção" },
+                                { href: "/despesas", icon: "receipt_long", label: "Despesas" },
                                 { href: "/agenda", icon: "calendar_month", label: "Agenda" },
                                 { href: "/relatorios", icon: "bar_chart", label: "Relatórios" },
                                 { href: "/usuarios", icon: "group", label: "Usuários" },
