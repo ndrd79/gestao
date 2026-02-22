@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Relatórios e Gráficos - Gestão de Frota</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1258e2",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        /* Custom scrollbar for better look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Hide scrollbar for clean look in specific areas */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex min-h-screen w-full flex-row overflow-hidden">
+<!-- Sidebar -->
+<aside class="group/sidebar flex w-20 flex-col overflow-y-auto border-r border-slate-200 bg-white transition-[width] duration-300 hover:w-64 dark:border-slate-800 dark:bg-slate-900 lg:w-64 flex-shrink-0 z-20 h-screen fixed lg:static">
+<div class="flex h-16 items-center justify-center border-b border-slate-200 px-4 dark:border-slate-800 lg:justify-start">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-white">
+<span class="material-symbols-outlined text-[24px]">local_shipping</span>
+</div>
+<span class="hidden truncate text-lg font-bold text-slate-900 dark:text-white lg:block group-hover/sidebar:block">
+                        FrotaAdmin
+                    </span>
+</div>
+</div>
+<div class="flex flex-1 flex-col justify-between px-3 py-4">
+<nav class="flex flex-col gap-2 space-y-1">
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="hidden font-medium lg:block group-hover/sidebar:block">Visão Geral</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">directions_car</span>
+<span class="hidden font-medium lg:block group-hover/sidebar:block">Frota</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">group</span>
+<span class="hidden font-medium lg:block group-hover/sidebar:block">Motoristas</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-slate-500 hover:bg-primary/10 hover:text-primary dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">build</span>
+<span class="hidden font-medium lg:block group-hover/sidebar:block">Manutenção</span>
+</a>
+<a class="group flex items-center gap-3 rounded-lg bg-primary text-white px-3 py-2.5 transition-colors shadow-md shadow-primary/20" href="#">
+<span class="material-symbols-outlined text-[24px]">bar_chart</span>
+<span class="hidden font-medium lg:block group-hover/sidebar:block">Relatórios</span>
+</a>
+</nav>
+<div class="flex flex-col gap-4">
+<div class="rounded-xl bg-slate-50 p-4 dark:bg-slate-800 hidden lg:block group-hover/sidebar:block">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 shrink-0 overflow-hidden rounded-full bg-slate-200">
+<img alt="User Profile" class="h-full w-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfdZEKIcshiBx_Ny8q-o2cqDix5wGnkxShZ-WQT1efzSat3GcjypS5PpAyXJAjVxERFsdUREEX1yPKNqPyUgzwD1VQlJ9CMFCG3MgwNJqp7KvElQ61HJ8fGHZMEFYVvuItV_PzwRqDbRFG9hlhlQKREZzl4onBI2pl4axT9r3DnZ4jDoLTaMTD_fSvT4l6j_wivpBYTAnrv9xROvHsGit3b1dicrSN-no3_O3Y1UT-HPuNwsm0jjitYUw3n5BNxLuYOgmHMQxbebI8"/>
+</div>
+<div class="flex flex-col overflow-hidden">
+<span class="truncate text-sm font-semibold text-slate-900 dark:text-white">Carlos Silva</span>
+<span class="truncate text-xs text-slate-500 dark:text-slate-400">Admin</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 overflow-y-auto lg:ml-0 ml-20 h-screen">
+<div class="container mx-auto max-w-[1200px] px-4 py-8 md:px-8">
+<!-- Header -->
+<header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+<div>
+<h1 class="text-3xl font-black tracking-tight text-slate-900 dark:text-white">Relatórios e Gráficos</h1>
+<p class="mt-1 text-slate-500 dark:text-slate-400">Analise o desempenho da sua frota e otimize custos.</p>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="relative">
+<select class="appearance-none rounded-lg border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm font-medium text-slate-700 shadow-sm hover:border-slate-300 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+<option>Últimos 30 dias</option>
+<option>Este Mês</option>
+<option>Este Ano</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-slate-400 pointer-events-none">expand_more</span>
+</div>
+<button class="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white shadow-lg shadow-primary/30 transition-all hover:bg-primary/90 focus:ring-2 focus:ring-primary focus:ring-offset-2 dark:focus:ring-offset-slate-900">
+<span class="material-symbols-outlined text-[20px]">download</span>
+<span>Exportar</span>
+</button>
+</div>
+</header>
+<!-- KPI Cards -->
+<div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Gasto Total</p>
+<div class="flex items-center justify-center rounded-full bg-green-50 p-2 text-green-600 dark:bg-green-900/20 dark:text-green-400">
+<span class="material-symbols-outlined text-[20px]">attach_money</span>
+</div>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white">R$ 12.450</h3>
+<span class="flex items-center text-sm font-medium text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                2.5%
+                            </span>
+</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Consumo Total</p>
+<div class="flex items-center justify-center rounded-full bg-blue-50 p-2 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
+<span class="material-symbols-outlined text-[20px]">local_gas_station</span>
+</div>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white">2.300 L</h3>
+<span class="flex items-center text-sm font-medium text-green-600 dark:text-green-400">
+<span class="material-symbols-outlined text-[16px]">trending_up</span>
+                                1.2%
+                            </span>
+</div>
+</div>
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="flex items-center justify-between">
+<p class="text-sm font-medium text-slate-500 dark:text-slate-400">Km Rodados</p>
+<div class="flex items-center justify-center rounded-full bg-orange-50 p-2 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400">
+<span class="material-symbols-outlined text-[20px]">speed</span>
+</div>
+</div>
+<div class="mt-4 flex items-baseline gap-2">
+<h3 class="text-3xl font-bold text-slate-900 dark:text-white">15.400 km</h3>
+<span class="flex items-center text-sm font-medium text-red-500 dark:text-red-400">
+<span class="material-symbols-outlined text-[16px]">trending_down</span>
+                                0.5%
+                            </span>
+</div>
+</div>
+</div>
+<!-- Charts Section -->
+<div class="mb-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
+<!-- Bar Chart: Gastos por Veículo -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="mb-6 flex items-center justify-between">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Gastos por Veículo</h3>
+<button class="text-slate-400 hover:text-primary dark:text-slate-500">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Simulated Chart Area -->
+<div class="relative h-64 w-full">
+<!-- Y-Axis Lines -->
+<div class="absolute inset-0 flex flex-col justify-between text-xs text-slate-400">
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"><span class="absolute -top-2 -left-8">5k</span></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"><span class="absolute -top-2 -left-8">4k</span></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"><span class="absolute -top-2 -left-8">3k</span></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"><span class="absolute -top-2 -left-8">2k</span></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"><span class="absolute -top-2 -left-8">1k</span></div>
+<div class="relative border-b border-slate-300 dark:border-slate-600 w-full h-0"><span class="absolute -top-2 -left-8">0</span></div>
+</div>
+<!-- Bars Container -->
+<div class="absolute inset-0 ml-4 flex items-end justify-around pb-[1px] pt-4">
+<!-- Bar 1 -->
+<div class="group relative flex h-full w-full flex-col justify-end items-center">
+<div class="relative w-8 sm:w-12 rounded-t-md bg-primary/80 transition-all duration-300 hover:bg-primary" style="height: 65%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            R$3.2k
+                                        </div>
+</div>
+<span class="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">Ford Ka</span>
+</div>
+<!-- Bar 2 -->
+<div class="group relative flex h-full w-full flex-col justify-end items-center">
+<div class="relative w-8 sm:w-12 rounded-t-md bg-primary/60 transition-all duration-300 hover:bg-primary" style="height: 45%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            R$2.1k
+                                        </div>
+</div>
+<span class="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">Strada</span>
+</div>
+<!-- Bar 3 -->
+<div class="group relative flex h-full w-full flex-col justify-end items-center">
+<div class="relative w-8 sm:w-12 rounded-t-md bg-primary transition-all duration-300 hover:bg-primary" style="height: 85%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            R$4.2k
+                                        </div>
+</div>
+<span class="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">Master</span>
+</div>
+<!-- Bar 4 -->
+<div class="group relative flex h-full w-full flex-col justify-end items-center">
+<div class="relative w-8 sm:w-12 rounded-t-md bg-primary/40 transition-all duration-300 hover:bg-primary" style="height: 30%;">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-1 text-xs font-bold text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                            R$1.5k
+                                        </div>
+</div>
+<span class="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">Gol</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Line Chart: Combustível por Mês -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+<div class="mb-6 flex items-center justify-between">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Combustível por Mês</h3>
+<button class="text-slate-400 hover:text-primary dark:text-slate-500">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+<!-- Simulated Chart Area -->
+<div class="relative h-64 w-full overflow-hidden">
+<!-- Y-Axis Lines -->
+<div class="absolute inset-0 flex flex-col justify-between text-xs text-slate-400 z-0">
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="relative border-b border-dashed border-slate-200 dark:border-slate-700 w-full h-0"></div>
+<div class="relative border-b border-slate-300 dark:border-slate-600 w-full h-0"></div>
+</div>
+<!-- Line/Area Chart Visualization (using CSS gradients/clip-path simulation) -->
+<div class="absolute inset-0 flex items-end px-2 pt-4">
+<div class="relative h-full w-full">
+<!-- The Chart Line (SVG) -->
+<svg class="absolute inset-0 h-[85%] w-full overflow-visible" preserveaspectratio="none" viewbox="0 0 100 50">
+<!-- Gradient Definition -->
+<defs>
+<lineargradient id="chartGradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#1258e2" stop-opacity="0.3"></stop>
+<stop offset="100%" stop-color="#1258e2" stop-opacity="0"></stop>
+</lineargradient>
+</defs>
+<!-- Area Path -->
+<path d="M0,50 L0,35 L16.6,25 L33.2,40 L49.8,20 L66.4,30 L83,15 L100,25 L100,50 Z" fill="url(#chartGradient)"></path>
+<!-- Line Path -->
+<path d="M0,35 L16.6,25 L33.2,40 L49.8,20 L66.4,30 L83,15 L100,25" fill="none" stroke="#1258e2" stroke-linecap="round" stroke-linejoin="round" stroke-width="1" vector-effect="non-scaling-stroke"></path>
+<!-- Points -->
+<circle cx="0" cy="35" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="16.6" cy="25" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="33.2" cy="40" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="49.8" cy="20" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="66.4" cy="30" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="83" cy="15" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+<circle cx="100" cy="25" fill="white" r="1.5" stroke="#1258e2" stroke-width="1"></circle>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute bottom-0 w-full flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400">
+<span>Jan</span>
+<span>Fev</span>
+<span>Mar</span>
+<span>Abr</span>
+<span>Mai</span>
+<span>Jun</span>
+<span>Jul</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Detailed Data Table -->
+<div class="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 overflow-hidden">
+<div class="border-b border-slate-200 px-6 py-4 dark:border-slate-800 flex flex-row items-center justify-between">
+<h3 class="text-lg font-bold text-slate-900 dark:text-white">Detalhamento por Veículo</h3>
+<button class="text-sm font-medium text-primary hover:text-primary/80">Ver tudo</button>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left text-sm text-slate-600 dark:text-slate-400">
+<thead class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+<tr>
+<th class="px-6 py-3 font-semibold" scope="col">Veículo</th>
+<th class="px-6 py-3 font-semibold" scope="col">Placa</th>
+<th class="px-6 py-3 font-semibold" scope="col">Gasto (R$)</th>
+<th class="px-6 py-3 font-semibold" scope="col">Consumo (L)</th>
+<th class="px-6 py-3 font-semibold" scope="col">Km Total</th>
+<th class="px-6 py-3 font-semibold text-right" scope="col">Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+<tr class="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Renault Master</td>
+<td class="px-6 py-4">ABC-1234</td>
+<td class="px-6 py-4">R$ 4.250,00</td>
+<td class="px-6 py-4">850 L</td>
+<td class="px-6 py-4">5.200 km</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                            Ativo
+                                        </span>
+</td>
+</tr>
+<tr class="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Ford Ka</td>
+<td class="px-6 py-4">XYZ-9876</td>
+<td class="px-6 py-4">R$ 3.200,00</td>
+<td class="px-6 py-4">540 L</td>
+<td class="px-6 py-4">4.100 km</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                            Ativo
+                                        </span>
+</td>
+</tr>
+<tr class="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">Fiat Strada</td>
+<td class="px-6 py-4">JKL-4567</td>
+<td class="px-6 py-4">R$ 2.150,00</td>
+<td class="px-6 py-4">390 L</td>
+<td class="px-6 py-4">2.800 km</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400">
+                                            Manutenção
+                                        </span>
+</td>
+</tr>
+<tr class="bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/50">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white">VW Gol</td>
+<td class="px-6 py-4">MNO-3210</td>
+<td class="px-6 py-4">R$ 1.550,00</td>
+<td class="px-6 py-4">280 L</td>
+<td class="px-6 py-4">1.900 km</td>
+<td class="px-6 py-4 text-right">
+<span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                                            Ativo
+                                        </span>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

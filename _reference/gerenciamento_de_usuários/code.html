@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gerenciamento de Usuários</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#1258e2",
+                        "primary-hover": "#0e46b5",
+                        "primary-light": "#eef4ff",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101622",
+                        "surface-light": "#ffffff",
+                        "surface-dark": "#1a2230",
+                        "border-light": "#e2e8f0",
+                        "border-dark": "#2d3748",
+                        "text-primary-light": "#1e293b",
+                        "text-primary-dark": "#f1f5f9",
+                        "text-secondary-light": "#64748b",
+                        "text-secondary-dark": "#94a3b8",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-text-primary-light dark:text-text-primary-dark antialiased transition-colors duration-200">
+<div class="min-h-screen flex flex-col">
+<!-- Top Navigation / Header Placeholder -->
+<header class="bg-surface-light dark:bg-surface-dark border-b border-border-light dark:border-border-dark h-16 flex items-center px-6 lg:px-10 sticky top-0 z-10">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white">
+<span class="material-symbols-outlined text-[20px]">local_shipping</span>
+</div>
+<span class="font-bold text-lg tracking-tight">FleetAdmin</span>
+</div>
+<div class="ml-auto flex items-center gap-4">
+<button class="p-2 text-text-secondary-light hover:text-primary dark:text-text-secondary-dark transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs">
+                    JD
+                </div>
+</div>
+</header>
+<!-- Main Content -->
+<main class="flex-1 px-4 sm:px-6 lg:px-40 py-8 lg:py-10">
+<div class="max-w-[1200px] mx-auto flex flex-col gap-8">
+<!-- Breadcrumbs & Header -->
+<div class="flex flex-col gap-1">
+<nav class="flex items-center gap-2 text-sm text-text-secondary-light dark:text-text-secondary-dark mb-2">
+<a class="hover:text-primary transition-colors" href="#">Home</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Configurações</a>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<span class="font-medium text-text-primary-light dark:text-text-primary-dark">Usuários</span>
+</nav>
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl lg:text-4xl font-black tracking-tight text-text-primary-light dark:text-text-primary-dark">
+                                Gerenciamento de Usuários
+                            </h1>
+<p class="mt-2 text-text-secondary-light dark:text-text-secondary-dark max-w-2xl">
+                                Gerencie o acesso e permissões da equipe da sua frota. Adicione novos membros e controle as funções administrativas.
+                            </p>
+</div>
+<button class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg font-medium shadow-sm transition-all active:scale-[0.98] whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                            Adicionar Usuário
+                        </button>
+</div>
+</div>
+<!-- Filters & Search -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark p-4 lg:p-5">
+<div class="flex flex-col md:flex-row gap-4">
+<div class="relative flex-1">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm outline-none transition-all placeholder:text-text-secondary-light/60 dark:placeholder:text-text-secondary-dark/60 text-text-primary-light dark:text-text-primary-dark" placeholder="Buscar por nome ou email..." type="text"/>
+</div>
+<div class="flex gap-4">
+<div class="relative w-full md:w-48">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+</span>
+<select class="w-full pl-10 pr-8 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm outline-none appearance-none cursor-pointer text-text-primary-light dark:text-text-primary-dark">
+<option value="">Todas Funções</option>
+<option value="admin">Administrador</option>
+<option value="staff">Funcionário</option>
+<option value="driver">Motorista</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+<div class="relative w-full md:w-48">
+<span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">toggle_on</span>
+</span>
+<select class="w-full pl-10 pr-8 py-2.5 bg-background-light dark:bg-background-dark border border-border-light dark:border-border-dark rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary text-sm outline-none appearance-none cursor-pointer text-text-primary-light dark:text-text-primary-dark">
+<option value="">Todos Status</option>
+<option value="active">Ativo</option>
+<option value="inactive">Inativo</option>
+</select>
+<span class="absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary-light dark:text-text-secondary-dark pointer-events-none">
+<span class="material-symbols-outlined text-[20px]">expand_more</span>
+</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Data Table -->
+<div class="bg-surface-light dark:bg-surface-dark rounded-xl shadow-sm border border-border-light dark:border-border-dark overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-background-light/50 dark:bg-background-dark/50 border-b border-border-light dark:border-border-dark">
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark min-w-[200px]">
+                                        Nome
+                                    </th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark min-w-[240px]">
+                                        Email
+                                    </th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark">
+                                        Função
+                                    </th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark">
+                                        Status
+                                    </th>
+<th class="py-4 px-6 text-xs font-semibold uppercase tracking-wider text-text-secondary-light dark:text-text-secondary-dark text-right">
+                                        Ações
+                                    </th>
+</tr>
+</thead>
+<tbody class="divide-y divide-border-light dark:divide-border-dark">
+<!-- Row 1 -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 flex items-center justify-center text-primary font-bold border border-blue-200 dark:border-blue-800">
+                                                CS
+                                            </div>
+<div>
+<p class="font-medium text-text-primary-light dark:text-text-primary-dark">Carlos Silva</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark md:hidden">carlos@frota.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                        carlos@frota.com
+                                    </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                            Administrador
+                                        </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                            Ativo
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-primary hover:bg-primary/5 dark:text-text-secondary-dark dark:hover:text-primary transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-red-500 hover:bg-red-50 dark:text-text-secondary-dark dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors" title="Remover">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-fuchsia-100 dark:from-purple-900 dark:to-fuchsia-900 flex items-center justify-center text-purple-600 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
+                                                AS
+                                            </div>
+<div>
+<p class="font-medium text-text-primary-light dark:text-text-primary-dark">Ana Souza</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark md:hidden">ana.s@frota.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                        ana.s@frota.com
+                                    </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                            Funcionário
+                                        </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                            Ativo
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-primary hover:bg-primary/5 dark:text-text-secondary-dark dark:hover:text-primary transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-red-500 hover:bg-red-50 dark:text-text-secondary-dark dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors" title="Remover">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-orange-100 to-amber-100 dark:from-orange-900 dark:to-amber-900 flex items-center justify-center text-orange-600 dark:text-orange-300 font-bold border border-orange-200 dark:border-orange-800">
+                                                RD
+                                            </div>
+<div>
+<p class="font-medium text-text-primary-light dark:text-text-primary-dark">Roberto Dias</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark md:hidden">roberto@frota.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                        roberto@frota.com
+                                    </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                            Funcionário
+                                        </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800">
+                                            Inativo
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-primary hover:bg-primary/5 dark:text-text-secondary-dark dark:hover:text-primary transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-red-500 hover:bg-red-50 dark:text-text-secondary-dark dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors" title="Remover">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-100 to-emerald-100 dark:from-teal-900 dark:to-emerald-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold border border-teal-200 dark:border-teal-800">
+                                                ML
+                                            </div>
+<div>
+<p class="font-medium text-text-primary-light dark:text-text-primary-dark">Mariana Lima</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark md:hidden">mariana@frota.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                        mariana@frota.com
+                                    </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                                            Funcionário
+                                        </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                            Ativo
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-primary hover:bg-primary/5 dark:text-text-secondary-dark dark:hover:text-primary transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-red-500 hover:bg-red-50 dark:text-text-secondary-dark dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors" title="Remover">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 5 -->
+<tr class="group hover:bg-background-light dark:hover:bg-background-dark/50 transition-colors">
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-gradient-to-br from-gray-100 to-slate-200 dark:from-gray-800 dark:to-slate-800 flex items-center justify-center text-gray-600 dark:text-gray-300 font-bold border border-gray-200 dark:border-gray-700">
+                                                JP
+                                            </div>
+<div>
+<p class="font-medium text-text-primary-light dark:text-text-primary-dark">João Pedro</p>
+<p class="text-xs text-text-secondary-light dark:text-text-secondary-dark md:hidden">joao@frota.com</p>
+</div>
+</div>
+</td>
+<td class="py-4 px-6 text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                        joao@frota.com
+                                    </td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-[14px]">local_shipping</span>
+                                            Motorista
+                                        </span>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
+                                            Ativo
+                                        </span>
+</td>
+<td class="py-4 px-6 text-right">
+<div class="flex items-center justify-end gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-primary hover:bg-primary/5 dark:text-text-secondary-dark dark:hover:text-primary transition-colors" title="Editar">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="p-1.5 rounded-lg text-text-secondary-light hover:text-red-500 hover:bg-red-50 dark:text-text-secondary-dark dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors" title="Remover">
+<span class="material-symbols-outlined text-[20px]">delete</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-light dark:bg-surface-dark px-6 py-4 border-t border-border-light dark:border-border-dark flex items-center justify-between">
+<div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+<div>
+<p class="text-sm text-text-secondary-light dark:text-text-secondary-dark">
+                                    Mostrando <span class="font-medium text-text-primary-light dark:text-text-primary-dark">1</span> a <span class="font-medium text-text-primary-light dark:text-text-primary-dark">5</span> de <span class="font-medium text-text-primary-light dark:text-text-primary-dark">42</span> resultados
+                                </p>
+</div>
+</div>
+<div class="flex items-center gap-2 justify-center w-full sm:w-auto">
+<button class="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-background-dark border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all disabled:opacity-50">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-white text-sm font-medium shadow-sm">1</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-background-dark text-sm font-medium transition-colors">2</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-background-dark text-sm font-medium transition-colors">3</button>
+<span class="flex items-center justify-center w-8 h-8 text-text-secondary-light dark:text-text-secondary-dark">...</span>
+<button class="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-background-dark text-sm font-medium transition-colors">12</button>
+<button class="flex items-center justify-center w-8 h-8 rounded-lg text-text-secondary-light dark:text-text-secondary-dark hover:bg-background-light dark:hover:bg-background-dark border border-transparent hover:border-border-light dark:hover:border-border-dark transition-all">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
