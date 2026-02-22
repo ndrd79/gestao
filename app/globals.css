@@ -29,9 +29,9 @@
   --color-border: #334155;
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #94a3b8;
-  --color-primary: #7DBDFD;
-  --color-primary-light: #a8d4fe;
-  --color-primary-hover: #5ca8fc;
+  --color-primary: #4a9edd;
+  --color-primary-light: #6cb4f0;
+  --color-primary-hover: #3a8ecd;
 }
 
 .dark ::-webkit-scrollbar-thumb {
