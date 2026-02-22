@@ -130,13 +130,25 @@ export default function ConfiguracoesPage() {
             .single();
 
         if (existing) {
-            await supabase
+            const { error } = await supabase
                 .from("company_settings")
                 .update({ company_name: companyName, updated_at: new Date().toISOString() })
                 .eq("id", existing.id);
+            if (error) {
+                setLogoMsg("Erro ao salvar: " + error.message);
+                return;
+            }
+        } else {
+            const { error } = await supabase
+                .from("company_settings")
+                .insert({ company_name: companyName });
+            if (error) {
+                setLogoMsg("Erro ao salvar: " + error.message);
+                return;
+            }
         }
-        setSaved(true);
-        setTimeout(() => setSaved(false), 3000);
+        setLogoMsg("✅ Nome da empresa salvo!");
+        setTimeout(() => setLogoMsg(""), 3000);
     }
 
     async function handleProfileSave(e) {
