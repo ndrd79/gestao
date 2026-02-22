@@ -6,7 +6,7 @@
 CREATE TABLE IF NOT EXISTS trip_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     vehicle_id UUID NOT NULL REFERENCES vehicles(id) ON DELETE CASCADE,
-    driver_id UUID NOT NULL REFERENCES auth.users(id),
+    driver_id UUID NOT NULL REFERENCES profiles(id),
     date DATE NOT NULL DEFAULT CURRENT_DATE,
     km_start INTEGER NOT NULL,
     km_end INTEGER,
@@ -25,6 +25,10 @@ CREATE TABLE IF NOT EXISTS trip_logs (
 ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS client_name TEXT;
 ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS address TEXT;
 ALTER TABLE trip_logs ADD COLUMN IF NOT EXISTS reason TEXT;
+
+-- Corrigir a constraint de driver_id para permitir joins com profiles
+ALTER TABLE trip_logs DROP CONSTRAINT IF EXISTS trip_logs_driver_id_fkey;
+ALTER TABLE trip_logs ADD CONSTRAINT trip_logs_driver_id_fkey FOREIGN KEY (driver_id) REFERENCES profiles(id);
 
 -- Índices para performance
 CREATE INDEX IF NOT EXISTS idx_trip_logs_driver ON trip_logs(driver_id);
