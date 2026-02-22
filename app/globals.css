@@ -40,6 +40,40 @@
   background: #64748b;
 }
 
+/* ===== Dark Mode: Form Elements ===== */
+.dark select,
+.dark input,
+.dark textarea {
+  color: #f1f5f9;
+  background-color: #0f172a;
+  border-color: #334155;
+}
+
+.dark select option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748b;
+}
+
+.dark select:focus,
+.dark input:focus,
+.dark textarea:focus {
+  border-color: #7DBDFD;
+}
+
+/* Dark mode for specific UI elements */
+.dark .hover\:bg-red-50:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+
+.dark .hover\:bg-background\/50:hover {
+  background-color: rgba(15, 23, 42, 0.5);
+}
+
 /* ===== Base ===== */
 body {
   font-family: var(--font-body);
