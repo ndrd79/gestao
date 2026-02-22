@@ -34,6 +34,19 @@ export default function DiarioBordoPage() {
 
     const isAdminOrGestor = profile?.role === "admin" || profile?.role === "gestor";
 
+    // Estatísticas do dia
+    const stats = useMemo(() => {
+        const completed = trips.filter(t => t.status === 'finalizado');
+        const activeCount = trips.filter(t => t.status === 'em_andamento').length;
+        const totalKm = completed.reduce((acc, t) => acc + (t.km_end - t.km_start || 0), 0);
+        return {
+            total: trips.length,
+            completed: completed.length,
+            active: activeCount,
+            km: totalKm
+        };
+    }, [trips]);
+
     // Relógio em tempo real
     useEffect(() => {
         const timer = setInterval(() => setClockTime(new Date()), 1000);
@@ -63,7 +76,6 @@ export default function DiarioBordoPage() {
             }
             if (tRes.error) {
                 console.error("Erro trip_logs:", tRes.error);
-                // Se o erro for que a tabela não existe, dar uma mensagem amigável
                 if (tRes.error.code === "PGRST116" || tRes.error.message?.includes("relation \"trip_logs\" does not exist")) {
                     throw new Error("A tabela 'trip_logs' não foi encontrada. Certifique-se de executar o SQL de migração no Supabase.");
                 }
@@ -209,6 +221,12 @@ export default function DiarioBordoPage() {
         return h > 0 ? `${h}h${m > 0 ? m + "min" : ""}` : `${m}min`;
     }
 
+    function openInMaps(address, destination) {
+        const query = address ? `${address}, ${destination}` : destination;
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(query)}`;
+        window.open(url, '_blank');
+    }
+
     return (
         <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
@@ -235,6 +253,46 @@ export default function DiarioBordoPage() {
                 </div>
             </div>
 
+            {/* Resumo de Produtividade */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-surface p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl">route</span>
+                    </div>
+                    <div>
+                        <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Saídas Hoje</p>
+                        <p className="text-xl font-bold text-text-primary">{stats.total}</p>
+                    </div>
+                </div>
+                <div className="bg-surface p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl">speed</span>
+                    </div>
+                    <div>
+                        <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">KM Rodados</p>
+                        <p className="text-xl font-bold text-text-primary">{stats.km.toLocaleString("pt-BR")} km</p>
+                    </div>
+                </div>
+                <div className="bg-surface p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl">local_shipping</span>
+                    </div>
+                    <div>
+                        <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Em Rota</p>
+                        <p className="text-xl font-bold text-text-primary">{stats.active}</p>
+                    </div>
+                </div>
+                <div className="bg-surface p-4 rounded-xl border border-border shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center">
+                        <span className="material-symbols-outlined text-2xl">task_alt</span>
+                    </div>
+                    <div>
+                        <p className="text-xs text-text-secondary font-medium uppercase tracking-wider">Concluídas</p>
+                        <p className="text-xl font-bold text-text-primary">{stats.completed}</p>
+                    </div>
+                </div>
+            </div>
+
             {/* Alerta de Erro */}
             {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 shadow-sm">
@@ -242,12 +300,7 @@ export default function DiarioBordoPage() {
                     <div>
                         <p className="font-bold text-sm">Ops! Ocorreu um erro ao carregar os dados.</p>
                         <p className="text-xs mt-1">{error}</p>
-                        <button
-                            onClick={() => fetchData()}
-                            className="mt-2 text-xs font-bold underline hover:no-underline"
-                        >
-                            Tentar novamente
-                        </button>
+                        <button onClick={() => fetchData()} className="mt-2 text-xs font-bold underline hover:no-underline">Tentar novamente</button>
                     </div>
                 </div>
             )}
@@ -257,10 +310,7 @@ export default function DiarioBordoPage() {
                     <span className="material-symbols-outlined text-amber-500">warning</span>
                     <div>
                         <p className="font-bold text-sm">Nenhum veículo encontrado.</p>
-                        <p className="text-xs mt-1">
-                            Parece que não há veículos cadastrados no sistema ou você não tem permissão para vê-los.
-                            Vá até a página de <a href="/veiculos" className="underline font-bold">Veículos</a> para cadastrar um.
-                        </p>
+                        <p className="text-xs mt-1">Certifique-se de cadastrar veículos na página de <a href="/veiculos" className="underline font-bold">Veículos</a>.</p>
                     </div>
                 </div>
             )}
@@ -275,17 +325,23 @@ export default function DiarioBordoPage() {
                                 <span className="material-symbols-outlined text-2xl animate-pulse">directions_car</span>
                             </div>
                             <div>
-                                <p className="text-sm text-white/80">Viagem em andamento</p>
+                                <p className="text-sm text-white/80">Sua viagem ativa</p>
                                 <p className="text-lg font-bold">{myActiveTrip.vehicle?.name} — {myActiveTrip.vehicle?.plate}</p>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-white/90">
                                     {myActiveTrip.client_name && <span>👤 {myActiveTrip.client_name}</span>}
-                                    <span>📍 {myActiveTrip.destination}</span>
-                                    <span>🕐 Saída: {formatTime(myActiveTrip.time_start)}</span>
-                                    <span>📏 KM: {myActiveTrip.km_start?.toLocaleString("pt-BR")}</span>
+                                    <span className="flex items-center gap-1">
+                                        📍 {myActiveTrip.destination}
+                                        <button
+                                            onClick={() => openInMaps(myActiveTrip.address, myActiveTrip.destination)}
+                                            className="ml-1 bg-white/20 hover:bg-white/30 p-1 rounded-md transition-colors"
+                                            title="Como chegar (Google Maps)"
+                                        >
+                                            <span className="material-symbols-outlined text-[16px]">map</span>
+                                        </button>
+                                    </span>
+                                    <span>🕐 {formatTime(myActiveTrip.time_start)}</span>
+                                    <span>📏 {myActiveTrip.km_start?.toLocaleString("pt-BR")} km</span>
                                 </div>
-                                {myActiveTrip.reason && (
-                                    <p className="text-xs text-white/70 mt-1">Motivo: {myActiveTrip.reason}</p>
-                                )}
                             </div>
                         </div>
                         <button
@@ -293,21 +349,18 @@ export default function DiarioBordoPage() {
                             className="flex items-center gap-2 bg-white text-emerald-700 px-5 py-2.5 rounded-lg text-sm font-bold hover:bg-white/90 transition-all shadow-md"
                         >
                             <span className="material-symbols-outlined text-[18px]">stop_circle</span>
-                            Finalizar
+                            Finalizar Viagem
                         </button>
                     </div>
                 </div>
             )}
 
-            {/* Viagens ativas da equipe (admin/gestor) */}
+            {/* Viagens ativas da equipe */}
             {isAdminOrGestor && activeTrips.filter((t) => t.driver_id !== user?.id).length > 0 && (
                 <div className="bg-surface rounded-xl border border-border overflow-hidden">
                     <div className="px-5 py-3 border-b border-border bg-background/50 flex items-center gap-2">
                         <span className="material-symbols-outlined text-primary text-lg">visibility</span>
                         <h2 className="text-sm font-bold text-text-primary">Viagens Ativas da Equipe</h2>
-                        <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">
-                            {activeTrips.filter((t) => t.driver_id !== user?.id).length} ativas
-                        </span>
                     </div>
                     <div className="divide-y divide-border">
                         {activeTrips.filter((t) => t.driver_id !== user?.id).map((t) => (
@@ -317,25 +370,20 @@ export default function DiarioBordoPage() {
                                     <div>
                                         <p className="text-sm font-semibold text-text-primary">
                                             {t.driver?.name || "Motorista"} → {t.destination}
+                                            <button
+                                                onClick={() => openInMaps(t.address, t.destination)}
+                                                className="ml-2 text-primary hover:text-primary-hover inline-flex items-center"
+                                                title="Ver no mapa"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                            </button>
                                         </p>
                                         <p className="text-xs text-text-secondary">
-                                            {t.vehicle?.name} ({t.vehicle?.plate}) • Saída: {formatTime(t.time_start)} • KM: {t.km_start?.toLocaleString("pt-BR")}
+                                            {t.vehicle?.name} ({t.vehicle?.plate}) • Saída: {formatTime(t.time_start)}
                                         </p>
-                                        {(t.client_name || t.reason) && (
-                                            <p className="text-xs text-text-secondary mt-0.5">
-                                                {t.client_name && <span>Cliente: {t.client_name}</span>}
-                                                {t.client_name && t.reason && <span> • </span>}
-                                                {t.reason && <span>Motivo: {t.reason}</span>}
-                                            </p>
-                                        )}
                                     </div>
                                 </div>
-                                <button
-                                    onClick={() => openEndTrip(t)}
-                                    className="text-xs px-3 py-1.5 rounded-md text-amber-600 border border-amber-200 hover:bg-amber-50 font-medium transition-colors self-end sm:self-auto"
-                                >
-                                    Encerrar
-                                </button>
+                                <button onClick={() => openEndTrip(t)} className="text-xs px-3 py-1.5 rounded-md text-amber-600 border border-amber-200 hover:bg-amber-50 font-medium">Encerrar</button>
                             </div>
                         ))}
                     </div>
@@ -346,37 +394,17 @@ export default function DiarioBordoPage() {
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2 bg-surface border border-border rounded-lg px-3 py-2">
                     <span className="material-symbols-outlined text-text-secondary text-lg">calendar_today</span>
-                    <input
-                        type="date"
-                        value={filterDate}
-                        onChange={(e) => setFilterDate(e.target.value)}
-                        className="bg-transparent text-sm text-text-primary focus:outline-none"
-                    />
+                    <input type="date" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} className="bg-transparent text-sm text-text-primary focus:outline-none" />
                 </div>
-                <button
-                    onClick={() => setFilterDate(new Date().toISOString().split("T")[0])}
-                    className="text-xs px-3 py-2 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors"
-                >
-                    Hoje
-                </button>
-                <div className="ml-auto text-sm text-text-secondary">
-                    {trips.length} registro{trips.length !== 1 ? "s" : ""}
-                </div>
+                <button onClick={() => setFilterDate(new Date().toISOString().split("T")[0])} className="text-xs px-3 py-2 rounded-lg bg-primary/10 text-primary font-bold hover:bg-primary/20">Hoje</button>
             </div>
 
             {/* Tabela de Viagens */}
             <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
                 {loading ? (
-                    <div className="p-12 text-center text-text-secondary">
-                        <span className="material-symbols-outlined text-4xl animate-pulse">sync</span>
-                        <p className="mt-2 text-sm">Carregando...</p>
-                    </div>
+                    <div className="p-12 text-center text-text-secondary"><span className="material-symbols-outlined text-4xl animate-pulse">sync</span></div>
                 ) : trips.length === 0 ? (
-                    <div className="p-12 text-center text-text-secondary">
-                        <span className="material-symbols-outlined text-4xl">route</span>
-                        <p className="mt-2 text-sm font-medium">Nenhuma viagem registrada neste dia.</p>
-                        <p className="text-xs mt-1">Clique em "Iniciar Viagem" para começar.</p>
-                    </div>
+                    <div className="p-12 text-center text-text-secondary"><p className="text-sm">Nenhum registro encontrado para este dia.</p></div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left border-collapse">
@@ -384,13 +412,11 @@ export default function DiarioBordoPage() {
                                 <tr className="bg-background/50 border-b border-border">
                                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Motorista</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Veículo</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Cliente</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Destino / Endereço</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Motivo</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase">Cliente / Destino</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-center">Saída</th>
                                     <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-center">Retorno</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">KM</th>
-                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-center">Status</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-right">KM Rodados</th>
+                                    <th className="px-4 py-3 text-xs font-semibold text-text-secondary uppercase text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
@@ -401,96 +427,45 @@ export default function DiarioBordoPage() {
                                     const isExpanded = expandedTrip === t.id;
                                     return (
                                         <>
-                                            <tr
-                                                key={t.id}
-                                                className="hover:bg-background/50 transition-colors cursor-pointer"
-                                                onClick={() => setExpandedTrip(isExpanded ? null : t.id)}
-                                            >
-                                                <td className="px-4 py-3 text-sm font-medium text-text-primary whitespace-nowrap">
-                                                    {t.driver?.name || "—"}
-                                                    {t.driver_id === user?.id && <span className="text-xs text-primary ml-1">(eu)</span>}
-                                                </td>
-                                                <td className="px-4 py-3 whitespace-nowrap">
+                                            <tr key={t.id} className="hover:bg-background/50 transition-colors cursor-pointer" onClick={() => setExpandedTrip(isExpanded ? null : t.id)}>
+                                                <td className="px-4 py-3 text-sm font-medium text-text-primary">{t.driver?.name || "—"}</td>
+                                                <td className="px-4 py-3">
                                                     <div className="text-sm font-medium text-text-primary">{t.vehicle?.name}</div>
-                                                    <div className="text-xs text-text-secondary font-mono">{t.vehicle?.plate}</div>
+                                                    <div className="text-[10px] text-text-secondary font-mono uppercase">{t.vehicle?.plate}</div>
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-text-primary whitespace-nowrap">
-                                                    {t.client_name || <span className="text-text-secondary">—</span>}
+                                                <td className="px-4 py-3">
+                                                    <div className="text-sm font-medium text-text-primary flex items-center gap-1">
+                                                        {t.client_name || t.destination}
+                                                        <button onClick={(e) => { e.stopPropagation(); openInMaps(t.address, t.destination); }} className="text-primary hover:text-primary-hover">
+                                                            <span className="material-symbols-outlined text-[16px]">location_on</span>
+                                                        </button>
+                                                    </div>
+                                                    <div className="text-xs text-text-secondary truncate max-w-[180px]">{t.reason || t.address}</div>
                                                 </td>
-                                                <td className="px-4 py-3 max-w-[200px]">
-                                                    <div className="text-sm text-text-primary truncate">{t.destination || "—"}</div>
-                                                    {t.address && <div className="text-xs text-text-secondary truncate">{t.address}</div>}
-                                                </td>
-                                                <td className="px-4 py-3 text-sm text-text-secondary max-w-[150px] truncate">{t.reason || "—"}</td>
-                                                <td className="px-4 py-3 text-sm text-center font-mono text-text-primary whitespace-nowrap">{formatTime(t.time_start)}</td>
-                                                <td className="px-4 py-3 text-sm text-center font-mono text-text-primary whitespace-nowrap">
-                                                    {t.time_end ? formatTime(t.time_end) : (
-                                                        <span className="text-emerald-600 font-bold animate-pulse">em rota</span>
-                                                    )}
+                                                <td className="px-4 py-3 text-sm text-center font-mono">{formatTime(t.time_start)}</td>
+                                                <td className="px-4 py-3 text-sm text-center font-mono">
+                                                    {t.time_end ? formatTime(t.time_end) : <span className="text-emerald-600 font-bold animate-pulse text-[10px] uppercase">Em Rota</span>}
                                                     {duration && <div className="text-[10px] text-text-secondary">{duration}</div>}
                                                 </td>
-                                                <td className="px-4 py-3 text-sm text-right font-mono whitespace-nowrap">
-                                                    <div className="text-text-secondary text-xs">{t.km_start?.toLocaleString("pt-BR")} → {t.km_end?.toLocaleString("pt-BR") || "..."}</div>
-                                                    {dist !== null && <div className="text-primary font-bold">{dist.toLocaleString("pt-BR")} km</div>}
+                                                <td className="px-4 py-3 text-sm text-right font-bold whitespace-nowrap">
+                                                    {dist !== null ? <span className="text-primary">{dist} km</span> : <span className="text-text-secondary text-xs">—</span>}
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     {canEnd ? (
-                                                        <button
-                                                            onClick={(e) => { e.stopPropagation(); openEndTrip(t); }}
-                                                            className="text-xs px-3 py-1.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold hover:bg-emerald-100 transition-colors"
-                                                        >
-                                                            Finalizar
-                                                        </button>
+                                                        <button onClick={(e) => { e.stopPropagation(); openEndTrip(t); }} className="text-[10px] bg-emerald-600 text-white px-2 py-1 rounded font-bold uppercase">Finalizar</button>
                                                     ) : (
                                                         <StatusBadge status={t.status === "em_andamento" ? "Em Andamento" : t.status === "finalizado" ? "Concluído" : "Cancelado"} />
                                                     )}
                                                 </td>
                                             </tr>
-                                            {/* Detalhes expandidos */}
                                             {isExpanded && (
-                                                <tr key={`${t.id}-detail`} className="bg-background/30">
-                                                    <td colSpan={9} className="px-6 py-4">
-                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Motorista</span>
-                                                                <span className="font-semibold text-text-primary">{t.driver?.name || "—"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Cliente</span>
-                                                                <span className="font-semibold text-text-primary">{t.client_name || "Não informado"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Destino</span>
-                                                                <span className="font-semibold text-text-primary">{t.destination || "—"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Endereço</span>
-                                                                <span className="font-semibold text-text-primary">{t.address || "Não informado"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Motivo</span>
-                                                                <span className="font-semibold text-text-primary">{t.reason || "Não informado"}</span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">KM Inicial → Final</span>
-                                                                <span className="font-semibold text-text-primary">
-                                                                    {t.km_start?.toLocaleString("pt-BR")} → {t.km_end?.toLocaleString("pt-BR") || "..."}
-                                                                    {dist !== null && <span className="text-primary ml-2">({dist.toLocaleString("pt-BR")} km)</span>}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="text-text-secondary text-xs block">Horário</span>
-                                                                <span className="font-semibold text-text-primary">
-                                                                    {formatTime(t.time_start)} → {t.time_end ? formatTime(t.time_end) : "em rota"}
-                                                                    {duration && <span className="text-text-secondary ml-2">({duration})</span>}
-                                                                </span>
-                                                            </div>
-                                                            {t.notes && (
-                                                                <div className="col-span-2 md:col-span-4">
-                                                                    <span className="text-text-secondary text-xs block">Observações</span>
-                                                                    <span className="font-medium text-text-primary">{t.notes}</span>
-                                                                </div>
-                                                            )}
+                                                <tr key={`${t.id}-detail`} className="bg-background/30 text-xs">
+                                                    <td colSpan={7} className="px-6 py-4">
+                                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                                            <div><span className="text-text-secondary block mb-1">Cliente/Motivo</span><p className="font-bold">{t.client_name || "—"} / {t.reason || "—"}</p></div>
+                                                            <div><span className="text-text-secondary block mb-1">Endereço Completo</span><p className="font-bold">{t.address || "—"}, {t.destination}</p></div>
+                                                            <div><span className="text-text-secondary block mb-1">KM Inicial → Final</span><p className="font-bold">{t.km_start?.toLocaleString()} → {t.km_end?.toLocaleString() || "..."}</p></div>
+                                                            {t.notes && <div className="col-span-2 md:col-span-4"><span className="text-text-secondary block mb-1">Observações</span><p className="italic">{t.notes}</p></div>}
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -509,118 +484,47 @@ export default function DiarioBordoPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !saving && setShowForm(false)}></div>
                     <div className="relative bg-surface rounded-2xl shadow-2xl border border-border w-full max-w-lg overflow-hidden z-10 max-h-[90vh] flex flex-col">
-                        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-emerald-500 to-teal-600 text-white flex-shrink-0">
-                            <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined">play_arrow</span>
-                                <h2 className="text-lg font-bold">Iniciar Viagem</h2>
-                            </div>
-                            <span className="text-sm font-mono bg-white/20 px-2 py-0.5 rounded">
-                                {clockTime.toLocaleTimeString("pt-BR")}
-                            </span>
+                        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-emerald-500 to-teal-600 text-white">
+                            <h2 className="text-lg font-bold">Iniciar Nova Viagem</h2>
+                            <span className="text-sm font-mono bg-white/20 px-2 py-0.5 rounded">{clockTime.toLocaleTimeString("pt-BR")}</span>
                         </div>
-
-                        <form onSubmit={handleStartTrip} className="p-6 space-y-4 overflow-y-auto flex-1">
-                            {formError && (
-                                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-lg">error</span>
-                                    {formError}
-                                </div>
-                            )}
-
-                            {/* Veículo */}
+                        <form onSubmit={handleStartTrip} className="p-6 space-y-4 overflow-y-auto">
+                            {formError && <div className="p-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">{formError}</div>}
                             <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Veículo *</label>
-                                <select
-                                    value={form.vehicle_id}
-                                    onChange={(e) => {
-                                        const v = vehicles.find((v) => v.id === e.target.value);
-                                        setForm({ ...form, vehicle_id: e.target.value, km_start: v?.km?.toString() || "" });
-                                    }}
-                                    required
-                                    className="w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                >
-                                    <option value="">Selecione o veículo...</option>
-                                    {availableVehicles.map((v) => (
-                                        <option key={v.id} value={v.id}>{v.name} — {v.plate} (KM: {(v.km || 0).toLocaleString("pt-BR")})</option>
-                                    ))}
+                                <label className="block text-sm font-semibold text-text-primary mb-1">Veículo *</label>
+                                <select value={form.vehicle_id} onChange={(e) => {
+                                    const v = vehicles.find(v => v.id === e.target.value);
+                                    setForm({ ...form, vehicle_id: e.target.value, km_start: v?.km?.toString() || "" });
+                                }} required className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm">
+                                    <option value="">Selecione...</option>
+                                    {availableVehicles.map(v => <option key={v.id} value={v.id}>{v.name} ({v.plate})</option>)}
                                 </select>
-                                {vehiclesInUse.size > 0 && (
-                                    <p className="text-xs text-amber-600 mt-1">{vehiclesInUse.size} veículo{vehiclesInUse.size > 1 ? "s" : ""} em uso no momento.</p>
-                                )}
                             </div>
-
-                            {/* KM Inicial */}
                             <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">KM Inicial *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">speed</span>
-                                    <input type="number" value={form.km_start} onChange={(e) => setForm({ ...form, km_start: e.target.value })} required min={1}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Ex: 45230" />
-                                </div>
-                                {selectedVehicle && (
-                                    <p className="text-xs text-text-secondary mt-1">KM atual: <span className="font-bold">{(selectedVehicle.km || 0).toLocaleString("pt-BR")}</span></p>
-                                )}
+                                <label className="block text-sm font-semibold text-text-primary mb-1">KM Inicial *</label>
+                                <input type="number" value={form.km_start} onChange={(e) => setForm({ ...form, km_start: e.target.value })} required className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" />
                             </div>
-
-                            {/* Cliente */}
-                            <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Cliente</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">person</span>
-                                    <input type="text" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Nome do cliente (opcional)" />
-                                </div>
-                            </div>
-
-                            {/* Destino + Endereço */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Destino *</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">location_on</span>
-                                        <input type="text" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} required
-                                            className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Ex: Centro" />
-                                    </div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Cliente</label>
+                                    <input type="text" value={form.client_name} onChange={(e) => setForm({ ...form, client_name: e.target.value })} className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-semibold text-text-primary mb-1.5">Endereço</label>
-                                    <div className="relative">
-                                        <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">home</span>
-                                        <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}
-                                            className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Rua, nº (opcional)" />
-                                    </div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Motivo *</label>
+                                    <input type="text" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} required className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" />
                                 </div>
                             </div>
-
-                            {/* Motivo */}
                             <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Motivo da Viagem *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">description</span>
-                                    <input type="text" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} required
-                                        className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Ex: Instalação de internet" />
-                                </div>
+                                <label className="block text-sm font-semibold text-text-primary mb-1">Destino (Cidade/Bairro) *</label>
+                                <input type="text" value={form.destination} onChange={(e) => setForm({ ...form, destination: e.target.value })} required className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" />
                             </div>
-
-                            {/* Observações */}
                             <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Observações <span className="text-text-secondary font-normal">(opcional)</span></label>
-                                <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} rows={2}
-                                    className="w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none" placeholder="Informações adicionais..." />
+                                <label className="block text-sm font-semibold text-text-primary mb-1">Endereço Completo (para GPS)</label>
+                                <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" placeholder="Ex: Rua das Flores, 123" />
                             </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={() => setShowForm(false)} disabled={saving} className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-background transition-colors disabled:opacity-50">
-                                    Cancelar
-                                </button>
-                                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-60 shadow-sm">
-                                    {saving ? (
-                                        <><svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Registrando...</>
-                                    ) : (
-                                        <><span className="material-symbols-outlined text-[18px]">play_arrow</span> Iniciar Viagem</>
-                                    )}
-                                </button>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2 border border-border rounded-lg text-sm font-bold">Cancelar</button>
+                                <button type="submit" disabled={saving} className="flex-1 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold">{saving ? "Registrando..." : "Iniciar"}</button>
                             </div>
                         </form>
                     </div>
@@ -632,91 +536,25 @@ export default function DiarioBordoPage() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !saving && setEndingTrip(null)}></div>
                     <div className="relative bg-surface rounded-2xl shadow-2xl border border-border w-full max-w-md overflow-hidden z-10">
-                        <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
-                            <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined">stop_circle</span>
-                                <h2 className="text-lg font-bold">Finalizar Viagem</h2>
-                            </div>
-                            <span className="text-sm font-mono bg-white/20 px-2 py-0.5 rounded">
-                                {clockTime.toLocaleTimeString("pt-BR")}
-                            </span>
+                        <div className="px-6 py-4 border-b border-border bg-gradient-to-r from-blue-500 to-indigo-600 text-white">
+                            <h2 className="text-lg font-bold">Finalizar Viagem</h2>
                         </div>
-
-                        <form onSubmit={handleEndTrip} className="p-6 space-y-5">
-                            {/* Resumo da viagem */}
-                            <div className="bg-background rounded-xl p-4 space-y-2">
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-text-secondary">Veículo</span>
-                                    <span className="font-bold text-text-primary">{endingTrip.vehicle?.name} ({endingTrip.vehicle?.plate})</span>
-                                </div>
-                                {endingTrip.client_name && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-text-secondary">Cliente</span>
-                                        <span className="font-bold text-text-primary">{endingTrip.client_name}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-text-secondary">Destino</span>
-                                    <span className="font-bold text-text-primary">{endingTrip.destination}</span>
-                                </div>
-                                {endingTrip.reason && (
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-text-secondary">Motivo</span>
-                                        <span className="font-bold text-text-primary">{endingTrip.reason}</span>
-                                    </div>
-                                )}
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-text-secondary">Saída</span>
-                                    <span className="font-bold text-text-primary">{formatTime(endingTrip.time_start)}</span>
-                                </div>
-                                <div className="flex justify-between text-sm">
-                                    <span className="text-text-secondary">KM Inicial</span>
-                                    <span className="font-bold text-text-primary">{endingTrip.km_start?.toLocaleString("pt-BR")}</span>
-                                </div>
+                        <form onSubmit={handleEndTrip} className="p-6 space-y-4">
+                            <div className="text-sm bg-background p-3 rounded-lg flex flex-col gap-1">
+                                <p><span className="text-text-secondary">Veículo:</span> <b>{endingTrip.vehicle?.name}</b></p>
+                                <p><span className="text-text-secondary">Destino:</span> <b>{endingTrip.destination}</b></p>
+                                <p><span className="text-text-secondary">KM Inicial:</span> <b>{endingTrip.km_start}</b></p>
                             </div>
-
-                            {formError && (
-                                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
-                                    <span className="material-symbols-outlined text-lg">error</span>
-                                    {formError}
-                                </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-text-primary mb-1">KM Final *</label>
+                                <input type="number" value={endForm.km_end} onChange={(e) => setEndForm({ ...endForm, km_end: e.target.value })} required min={endingTrip.km_start} className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm font-bold" />
+                            </div>
+                            {endForm.km_end && parseInt(endForm.km_end) > endingTrip.km_start && (
+                                <p className="text-xs text-emerald-600 font-bold">Total rodado: {parseInt(endForm.km_end) - endingTrip.km_start} km</p>
                             )}
-
-                            {/* KM Final */}
-                            <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">KM Final *</label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary text-[20px]">speed</span>
-                                    <input type="number" value={endForm.km_end} onChange={(e) => setEndForm({ ...endForm, km_end: e.target.value })} required min={endingTrip.km_start}
-                                        className="w-full pl-10 pr-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                        placeholder={`Maior que ${endingTrip.km_start?.toLocaleString("pt-BR")}`} />
-                                </div>
-                                {endForm.km_end && parseInt(endForm.km_end) > endingTrip.km_start && (
-                                    <p className="text-xs text-emerald-600 mt-1 font-bold">
-                                        Distância percorrida: {(parseInt(endForm.km_end) - endingTrip.km_start).toLocaleString("pt-BR")} km
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Observações */}
-                            <div>
-                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Observações <span className="text-text-secondary font-normal">(opcional)</span></label>
-                                <textarea value={endForm.notes} onChange={(e) => setEndForm({ ...endForm, notes: e.target.value })} rows={2}
-                                    className="w-full px-4 py-2.5 border border-border rounded-lg text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none" placeholder="Ex: Serviço concluído" />
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex gap-3 pt-2">
-                                <button type="button" onClick={() => setEndingTrip(null)} disabled={saving} className="flex-1 px-4 py-2.5 border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-background transition-colors disabled:opacity-50">
-                                    Cancelar
-                                </button>
-                                <button type="submit" disabled={saving} className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-60 shadow-sm">
-                                    {saving ? (
-                                        <><svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Finalizando...</>
-                                    ) : (
-                                        <><span className="material-symbols-outlined text-[18px]">check_circle</span> Finalizar Viagem</>
-                                    )}
-                                </button>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => setEndingTrip(null)} className="flex-1 py-2 border border-border rounded-lg text-sm font-bold">Cancelar</button>
+                                <button type="submit" disabled={saving} className="flex-1 py-2 bg-blue-600 text-white rounded-lg text-sm font-bold">{saving ? "Salvando..." : "Concluir"}</button>
                             </div>
                         </form>
                     </div>
