@@ -46,6 +46,7 @@ export default function DiarioBordoPage() {
         setLoading(true);
         setError(null);
         try {
+            console.log("Buscando dados do Diário de Bordo...");
             const [vRes, tRes] = await Promise.all([
                 supabase.from("vehicles").select("id, name, plate, km, status").order("name"),
                 supabase
@@ -55,13 +56,26 @@ export default function DiarioBordoPage() {
                     .lte("date", filterDate)
                     .order("time_start", { ascending: false }),
             ]);
-            if (vRes.error) throw vRes.error;
-            if (tRes.error) throw tRes.error;
+
+            if (vRes.error) {
+                console.error("Erro veículos:", vRes.error);
+                throw new Error("Erro ao carregar veículos: " + vRes.error.message);
+            }
+            if (tRes.error) {
+                console.error("Erro trip_logs:", tRes.error);
+                // Se o erro for que a tabela não existe, dar uma mensagem amigável
+                if (tRes.error.code === "PGRST116" || tRes.error.message?.includes("relation \"trip_logs\" does not exist")) {
+                    throw new Error("A tabela 'trip_logs' não foi encontrada. Certifique-se de executar o SQL de migração no Supabase.");
+                }
+                throw new Error("Erro ao carregar viagens: " + tRes.error.message);
+            }
+
+            console.log("Veículos carregados:", vRes.data?.length);
             setVehicles(vRes.data || []);
             setTrips(tRes.data || []);
         } catch (err) {
-            console.error("Erro:", err);
-            setError("Erro ao carregar dados: " + err.message);
+            console.error("Erro Geral:", err);
+            setError(err.message);
         } finally {
             setLoading(false);
         }
@@ -220,6 +234,36 @@ export default function DiarioBordoPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Alerta de Erro */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                    <span className="material-symbols-outlined text-red-500">error</span>
+                    <div>
+                        <p className="font-bold text-sm">Ops! Ocorreu um erro ao carregar os dados.</p>
+                        <p className="text-xs mt-1">{error}</p>
+                        <button
+                            onClick={() => fetchData()}
+                            className="mt-2 text-xs font-bold underline hover:no-underline"
+                        >
+                            Tentar novamente
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {!loading && vehicles.length === 0 && !error && (
+                <div className="bg-amber-50 border border-amber-200 text-amber-700 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                    <span className="material-symbols-outlined text-amber-500">warning</span>
+                    <div>
+                        <p className="font-bold text-sm">Nenhum veículo encontrado.</p>
+                        <p className="text-xs mt-1">
+                            Parece que não há veículos cadastrados no sistema ou você não tem permissão para vê-los.
+                            Vá até a página de <a href="/veiculos" className="underline font-bold">Veículos</a> para cadastrar um.
+                        </p>
+                    </div>
+                </div>
+            )}
 
             {/* Banner viagem ativa */}
             {myActiveTrip && (
