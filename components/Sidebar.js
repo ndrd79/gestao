@@ -1,7 +1,8 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 const navItems = [
   { href: "/dashboard", icon: "dashboard", label: "Dashboard" },
@@ -17,6 +18,20 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [companyName, setCompanyName] = useState("Maxxi Internet");
+
+  useEffect(() => {
+    supabase
+      .from("company_settings")
+      .select("logo_url, company_name")
+      .limit(1)
+      .single()
+      .then(({ data }) => {
+        if (data?.logo_url) setLogoUrl(data.logo_url);
+        if (data?.company_name) setCompanyName(data.company_name);
+      });
+  }, []);
 
   return (
     <aside
@@ -26,15 +41,19 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-white/10">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center flex-shrink-0">
-            <span className="material-symbols-outlined text-primary text-xl font-bold">
-              local_shipping
-            </span>
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden bg-accent">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+            ) : (
+              <span className="material-symbols-outlined text-primary text-xl font-bold">
+                local_shipping
+              </span>
+            )}
           </div>
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-bold truncate text-accent">
-                Maxxi Internet
+                {companyName}
               </span>
               <span className="text-[11px] text-white/60 truncate">
                 Gestão de Frota
