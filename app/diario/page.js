@@ -45,7 +45,7 @@ export default function DiarioBordoPage() {
         setError(null);
         try {
             const [vRes, tRes] = await Promise.all([
-                supabase.from("vehicles").select("id, name, plate, km, status").eq("status", "ativo").order("name"),
+                supabase.from("vehicles").select("id, name, plate, km, status").order("name"),
                 supabase
                     .from("trip_logs")
                     .select("*, vehicle:vehicles(name, plate), driver:profiles(name)")
