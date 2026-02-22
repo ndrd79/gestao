@@ -3,12 +3,40 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import StatusBadge from "@/components/StatusBadge";
 
+const SERVICE_TYPES = [
+    "Troca de óleo",
+    "Troca de filtro de ar",
+    "Troca de filtro de óleo",
+    "Troca de filtro de combustível",
+    "Troca de pastilhas de freio",
+    "Troca de discos de freio",
+    "Troca de pneus",
+    "Alinhamento e balanceamento",
+    "Rodízio de pneus",
+    "Troca de bateria",
+    "Revisão elétrica",
+    "Troca de correia dentada",
+    "Troca de correia do alternador",
+    "Troca de velas de ignição",
+    "Revisão de suspensão",
+    "Troca de amortecedores",
+    "Troca de fluido de freio",
+    "Troca de fluido de arrefecimento",
+    "Troca de óleo da transmissão",
+    "Revisão de ar-condicionado",
+    "Funilaria e pintura",
+    "Revisão geral",
+    "Outro",
+];
+
 export default function ManutencaoPage() {
     const [records, setRecords] = useState([]);
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [search, setSearch] = useState("");
+    const [selectedService, setSelectedService] = useState("");
+    const [customService, setCustomService] = useState("");
     const [form, setForm] = useState({
         vehicle_id: "", service_type: "", date: "", cost: "", description: "", status: "pendente",
     });
@@ -29,15 +57,18 @@ export default function ManutencaoPage() {
     async function handleSubmit(e) {
         e.preventDefault();
         setSaving(true);
+        const serviceType = selectedService === "Outro" ? customService : selectedService;
         await supabase.from("maintenance").insert({
             vehicle_id: form.vehicle_id,
-            service_type: form.service_type,
+            service_type: serviceType,
             date: form.date,
             cost: parseFloat(form.cost) || 0,
             description: form.description,
             status: form.status,
         });
         setForm({ vehicle_id: "", service_type: "", date: "", cost: "", description: "", status: "pendente" });
+        setSelectedService("");
+        setCustomService("");
         setSaving(false);
         fetchData();
     }
@@ -103,8 +134,30 @@ export default function ManutencaoPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">Tipo de Serviço</label>
-                            <input value={form.service_type} onChange={(e) => setForm({ ...form, service_type: e.target.value })} required placeholder="Ex: Troca de óleo" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            <select
+                                value={selectedService}
+                                onChange={(e) => setSelectedService(e.target.value)}
+                                required
+                                className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background"
+                            >
+                                <option value="">Selecionar serviço</option>
+                                {SERVICE_TYPES.map((s) => (
+                                    <option key={s} value={s}>{s}</option>
+                                ))}
+                            </select>
                         </div>
+                        {selectedService === "Outro" && (
+                            <div>
+                                <label className="block text-sm font-semibold text-text-primary mb-1.5">Especificar Serviço</label>
+                                <input
+                                    value={customService}
+                                    onChange={(e) => setCustomService(e.target.value)}
+                                    required
+                                    placeholder="Descreva o serviço..."
+                                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary bg-background"
+                                />
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">Data</label>
                             <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
