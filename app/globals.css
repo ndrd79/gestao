@@ -29,7 +29,9 @@
   --color-border: #334155;
   --color-text-primary: #f1f5f9;
   --color-text-secondary: #94a3b8;
-  --color-primary-hover: #003399;
+  --color-primary: #7DBDFD;
+  --color-primary-light: #a8d4fe;
+  --color-primary-hover: #5ca8fc;
 }
 
 .dark ::-webkit-scrollbar-thumb {
