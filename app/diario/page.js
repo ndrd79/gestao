@@ -530,7 +530,24 @@ export default function DiarioBordoPage() {
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-text-primary mb-1">Endereço Completo (para GPS)</label>
-                                <input type="text" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className="w-full px-4 py-2 border border-border rounded-lg bg-background text-sm" placeholder="Ex: Rua das Flores, 123" />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={form.address}
+                                        onChange={(e) => setForm({ ...form, address: e.target.value })}
+                                        className="flex-1 px-4 py-2 border border-border rounded-lg bg-background text-sm"
+                                        placeholder="Ex: Rua das Flores, 123"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => openInMaps(form.address, form.destination)}
+                                        disabled={!form.address && !form.destination}
+                                        className="px-3 py-2 bg-background border border-border rounded-lg text-primary hover:bg-surface transition-colors flex items-center justify-center"
+                                        title="Conferir no mapa"
+                                    >
+                                        <span className="material-symbols-outlined text-[20px]">map</span>
+                                    </button>
+                                </div>
                             </div>
                             <div className="flex gap-3 pt-4">
                                 <button type="button" onClick={() => setShowForm(false)} className="flex-1 py-2 border border-border rounded-lg text-sm font-bold">Cancelar</button>
