@@ -11,6 +11,7 @@ const navItems = [
   { href: "/manutencao", icon: "build", label: "Manutenção" },
   { href: "/despesas", icon: "receipt_long", label: "Despesas" },
   { href: "/agenda", icon: "calendar_month", label: "Agenda" },
+  { href: "/diario", icon: "route", label: "Diário de Bordo" },
   { href: "/relatorios", icon: "bar_chart", label: "Relatórios" },
   { href: "/usuarios", icon: "group", label: "Usuários" },
   { href: "/configuracoes", icon: "settings", label: "Configurações" },
