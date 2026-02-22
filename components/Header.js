@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -13,8 +13,22 @@ export default function Header() {
     const [notifications, setNotifications] = useState([]);
     const [notifLoading, setNotifLoading] = useState(false);
     const [notifCount, setNotifCount] = useState(null);
+    const [logoUrl, setLogoUrl] = useState(null);
+    const [companyName, setCompanyName] = useState("Maxxi Internet");
     const { profile, signOut } = useAuth();
     const { theme, toggleTheme } = useTheme();
+
+    useEffect(() => {
+        supabase
+            .from("company_settings")
+            .select("logo_url, company_name")
+            .limit(1)
+            .single()
+            .then(({ data }) => {
+                if (data?.logo_url) setLogoUrl(data.logo_url);
+                if (data?.company_name) setCompanyName(data.company_name);
+            });
+    }, []);
     const router = useRouter();
 
     const displayName = profile?.name || "Usuário";
@@ -139,10 +153,14 @@ export default function Header() {
                     <span className="material-symbols-outlined">menu</span>
                 </button>
                 <div className="lg:hidden flex items-center gap-2">
-                    <div className="w-7 h-7 bg-accent rounded-md flex items-center justify-center">
-                        <span className="material-symbols-outlined text-primary text-base">local_shipping</span>
+                    <div className={`w-7 h-7 rounded-md flex items-center justify-center overflow-hidden ${logoUrl ? "bg-transparent" : "bg-accent"}`}>
+                        {logoUrl ? (
+                            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                        ) : (
+                            <span className="material-symbols-outlined text-primary text-base">local_shipping</span>
+                        )}
                     </div>
-                    <span className="font-bold text-sm text-primary">Maxxi</span>
+                    <span className="font-bold text-sm text-primary">{companyName}</span>
                 </div>
             </div>
 
@@ -311,11 +329,15 @@ export default function Header() {
                     ></div>
                     <div className="fixed left-0 top-0 bottom-0 w-64 bg-primary text-white p-4 shadow-2xl">
                         <div className="flex items-center gap-3 mb-8 pb-4 border-b border-white/10">
-                            <div className="w-9 h-9 bg-accent rounded-lg flex items-center justify-center">
-                                <span className="material-symbols-outlined text-primary text-xl">local_shipping</span>
+                            <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${logoUrl ? "bg-transparent" : "bg-accent"}`}>
+                                {logoUrl ? (
+                                    <img src={logoUrl} alt="Logo" className="w-full h-full object-contain" />
+                                ) : (
+                                    <span className="material-symbols-outlined text-primary text-xl">local_shipping</span>
+                                )}
                             </div>
-                            <div>
-                                <span className="text-sm font-bold text-accent">Maxxi Internet</span>
+                            <div className="min-w-0">
+                                <span className="text-sm font-bold text-accent truncate block">{companyName}</span>
                                 <p className="text-[11px] text-white/60">Gestão de Frota</p>
                             </div>
                         </div>
