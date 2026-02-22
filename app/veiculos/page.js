@@ -1,120 +1,225 @@
+"use client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import StatusBadge from "@/components/StatusBadge";
 
-const vehicles = [
-    { name: "Fiorino 01", driver: "João Silva", plate: "ABC-1234", model: "Fiat Fiorino", year: "2021", km: "45.200 km", kmNote: "Próxima revisão: 50k", status: "Ativo", icon: "local_shipping", iconBg: "bg-primary/10 text-primary" },
-    { name: "Van Executiva", driver: "Maria Oliveira", plate: "JKL-3456", model: "Mercedes Sprinter", year: "2019", km: "89.000 km", kmNote: "Revisão Atrasada", status: "Manutenção", icon: "airport_shuttle", iconBg: "bg-orange-100 text-orange-600" },
-    { name: "Gol da Firma", driver: "Sem motorista", plate: "DEF-5678", model: "VW Gol", year: "2022", km: "15.300 km", kmNote: "Uso baixo", status: "Ativo", icon: "directions_car", iconBg: "bg-primary-light/20 text-primary" },
-    { name: "Caminhão 03", driver: "Carlos Mendes", plate: "XYZ-9876", model: "VW Delivery", year: "2020", km: "120.500 km", kmNote: "Em rota", status: "Inativo", icon: "local_shipping", iconBg: "bg-indigo-100 text-indigo-600" },
-    { name: "Strada 02", driver: "Roberto Dias", plate: "GHI-9012", model: "Fiat Strada", year: "2021", km: "32.000 km", kmNote: "Regular", status: "Ativo", icon: "local_shipping", iconBg: "bg-teal-100 text-teal-600" },
-];
-
 export default function VeiculosPage() {
+    const [vehicles, setVehicles] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [statusFilter, setStatusFilter] = useState("todos");
+    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [form, setForm] = useState({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" });
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        fetchVehicles();
+    }, []);
+
+    async function fetchVehicles() {
+        setLoading(true);
+        const { data, error } = await supabase
+            .from("vehicles")
+            .select("*, driver:profiles(name)")
+            .order("created_at", { ascending: false });
+
+        if (!error) setVehicles(data || []);
+        setLoading(false);
+    }
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        setSaving(true);
+        const payload = {
+            name: form.name,
+            plate: form.plate.toUpperCase(),
+            model: form.model,
+            year: parseInt(form.year) || null,
+            km: parseInt(form.km) || 0,
+            status: form.status,
+        };
+
+        if (editingId) {
+            await supabase.from("vehicles").update(payload).eq("id", editingId);
+        } else {
+            await supabase.from("vehicles").insert(payload);
+        }
+
+        setShowForm(false);
+        setEditingId(null);
+        setForm({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" });
+        setSaving(false);
+        fetchVehicles();
+    }
+
+    function handleEdit(v) {
+        setForm({ name: v.name, plate: v.plate, model: v.model, year: v.year || "", km: v.km, status: v.status });
+        setEditingId(v.id);
+        setShowForm(true);
+    }
+
+    async function handleDelete(id) {
+        if (!confirm("Tem certeza que deseja excluir este veículo?")) return;
+        await supabase.from("vehicles").delete().eq("id", id);
+        fetchVehicles();
+    }
+
+    const filtered = vehicles.filter((v) => {
+        const matchSearch = v.name.toLowerCase().includes(search.toLowerCase()) || v.plate.toLowerCase().includes(search.toLowerCase());
+        const matchStatus = statusFilter === "todos" || v.status === statusFilter;
+        return matchSearch && matchStatus;
+    });
+
     return (
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-7xl mx-auto space-y-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-text-primary">Lista de Veículos</h1>
+                    <h1 className="text-2xl font-bold text-text-primary">Veículos</h1>
                     <p className="text-text-secondary mt-1">Gerencie a frota da Maxxi Internet.</p>
                 </div>
-                <button className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg shadow-sm text-sm font-bold transition-all active:scale-[0.98]">
+                <button
+                    onClick={() => { setShowForm(true); setEditingId(null); setForm({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" }); }}
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg shadow-sm text-sm font-bold transition-all active:scale-[0.98]"
+                >
                     <span className="material-symbols-outlined text-[20px]">add</span>
-                    Adicionar Veículo
+                    Novo Veículo
                 </button>
             </div>
 
-            {/* Filters */}
-            <div className="bg-surface rounded-xl shadow-sm border border-border p-4 mb-6">
-                <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-                    <div className="relative w-full md:max-w-md">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary material-symbols-outlined">search</span>
-                        <input
-                            className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg bg-background text-text-primary placeholder-text-secondary text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-shadow"
-                            placeholder="Buscar por placa, modelo ou motorista..."
-                            type="text"
-                        />
+            {/* Modal Form */}
+            {showForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="fixed inset-0 bg-black/40" onClick={() => setShowForm(false)}></div>
+                    <div className="relative bg-surface rounded-xl shadow-2xl border border-border w-full max-w-lg">
+                        <div className="px-6 py-4 border-b border-border flex items-center justify-between">
+                            <h2 className="text-lg font-bold text-text-primary">
+                                {editingId ? "Editar Veículo" : "Novo Veículo"}
+                            </h2>
+                            <button onClick={() => setShowForm(false)} className="p-1 text-text-secondary hover:text-text-primary rounded">
+                                <span className="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="col-span-2">
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Nome</label>
+                                    <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required placeholder="Ex: Fiorino 01" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Placa</label>
+                                    <input value={form.plate} onChange={(e) => setForm({ ...form, plate: e.target.value })} required placeholder="ABC-1D23" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary uppercase" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Modelo</label>
+                                    <input value={form.model} onChange={(e) => setForm({ ...form, model: e.target.value })} required placeholder="Fiat Fiorino" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Ano</label>
+                                    <input type="number" value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="2024" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">KM Atual</label>
+                                    <input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold text-text-primary mb-1">Status</label>
+                                    <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                        <option value="ativo">Ativo</option>
+                                        <option value="manutencao">Manutenção</option>
+                                        <option value="inativo">Inativo</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div className="flex justify-end gap-3 pt-2">
+                                <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 border border-border rounded-lg text-sm text-text-secondary hover:bg-background transition-colors">
+                                    Cancelar
+                                </button>
+                                <button type="submit" disabled={saving} className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg text-sm font-bold transition-all disabled:opacity-60">
+                                    <span className="material-symbols-outlined text-[18px]">save</span>
+                                    {saving ? "Salvando..." : editingId ? "Atualizar" : "Cadastrar"}
+                                </button>
+                            </div>
+                        </form>
                     </div>
-                    <div className="flex items-center gap-3 w-full md:w-auto">
-                        <select className="block w-full md:w-40 px-3 py-2.5 border border-border rounded-lg bg-surface text-text-primary text-sm focus:outline-none focus:ring-primary focus:border-primary cursor-pointer">
-                            <option>Todos Status</option>
-                            <option>Ativo</option>
-                            <option>Em Manutenção</option>
-                            <option>Inativo</option>
-                        </select>
-                        <button className="p-2.5 border border-border rounded-lg text-text-secondary hover:text-primary hover:bg-background transition-colors" title="Exportar dados">
-                            <span className="material-symbols-outlined">download</span>
+                </div>
+            )}
+
+            {/* Search + Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="relative w-full sm:max-w-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary material-symbols-outlined">search</span>
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg bg-surface text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Buscar veículos..." />
+                </div>
+                <div className="flex gap-2">
+                    {["todos", "ativo", "manutencao", "inativo"].map((s) => (
+                        <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? "bg-primary text-white" : "bg-surface border border-border text-text-secondary hover:bg-background"}`}>
+                            {s === "todos" ? "Todos" : s === "manutencao" ? "Manutenção" : s.charAt(0).toUpperCase() + s.slice(1)}
                         </button>
-                    </div>
+                    ))}
                 </div>
             </div>
 
             {/* Table */}
             <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-border">
-                        <thead className="bg-background/50">
-                            <tr>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Veículo / Motorista</th>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Placa</th>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Modelo</th>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Ano</th>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Km Atual</th>
-                                <th className="px-5 py-4 text-left text-xs font-semibold text-text-secondary uppercase tracking-wider">Status</th>
-                                <th className="px-5 py-4 text-right text-xs font-semibold text-text-secondary uppercase tracking-wider">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {vehicles.map((v, i) => (
-                                <tr key={i} className="hover:bg-background/50 transition-colors group">
-                                    <td className="px-5 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <div className={`flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center ${v.iconBg}`}>
-                                                <span className="material-symbols-outlined">{v.icon}</span>
-                                            </div>
-                                            <div className="ml-3">
-                                                <div className="text-sm font-semibold text-text-primary">{v.name}</div>
-                                                <div className="text-xs text-text-secondary">{v.driver}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 whitespace-nowrap">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-background text-text-primary border border-border font-mono">
-                                            {v.plate}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary">{v.model}</td>
-                                    <td className="px-5 py-4 whitespace-nowrap text-sm text-text-secondary">{v.year}</td>
-                                    <td className="px-5 py-4 whitespace-nowrap">
-                                        <div className="text-sm text-text-primary font-medium">{v.km}</div>
-                                        <div className={`text-xs ${v.kmNote === "Revisão Atrasada" ? "text-orange-500 font-medium" : "text-text-secondary"}`}>{v.kmNote}</div>
-                                    </td>
-                                    <td className="px-5 py-4 whitespace-nowrap"><StatusBadge status={v.status} /></td>
-                                    <td className="px-5 py-4 whitespace-nowrap text-right">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 text-text-secondary hover:text-primary rounded-lg hover:bg-background transition-colors">
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                            <button className="p-1.5 text-text-secondary hover:text-danger rounded-lg hover:bg-red-50 transition-colors">
-                                                <span className="material-symbols-outlined text-[20px]">delete</span>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                {/* Pagination */}
-                <div className="bg-surface px-5 py-3 flex items-center justify-between border-t border-border">
-                    <p className="text-sm text-text-secondary">
-                        Mostrando <span className="font-medium text-text-primary">1</span> a <span className="font-medium text-text-primary">5</span> de <span className="font-medium text-text-primary">12</span> resultados
-                    </p>
-                    <div className="flex gap-1">
-                        <button className="px-3 py-1.5 text-sm border border-border rounded-lg bg-primary text-white font-bold">1</button>
-                        <button className="px-3 py-1.5 text-sm border border-border rounded-lg text-text-secondary hover:bg-background">2</button>
-                        <button className="px-3 py-1.5 text-sm border border-border rounded-lg text-text-secondary hover:bg-background">3</button>
+                {loading ? (
+                    <div className="p-12 text-center text-text-secondary">
+                        <span className="material-symbols-outlined text-4xl animate-pulse">sync</span>
+                        <p className="mt-2 text-sm">Carregando veículos...</p>
                     </div>
-                </div>
+                ) : filtered.length === 0 ? (
+                    <div className="p-12 text-center text-text-secondary">
+                        <span className="material-symbols-outlined text-4xl">directions_car</span>
+                        <p className="mt-2 text-sm">{vehicles.length === 0 ? "Nenhum veículo cadastrado. Clique em 'Novo Veículo' para começar." : "Nenhum resultado encontrado."}</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-background/50 border-b border-border">
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Veículo</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Placa</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Modelo</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider text-right">KM</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider">Status</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase tracking-wider text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {filtered.map((v) => (
+                                    <tr key={v.id} className="hover:bg-background/50 transition-colors group">
+                                        <td className="px-5 py-3">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
+                                                    <span className="material-symbols-outlined text-lg">directions_car</span>
+                                                </div>
+                                                <div>
+                                                    <div className="text-sm font-semibold text-text-primary">{v.name}</div>
+                                                    {v.year && <div className="text-xs text-text-secondary">{v.year}</div>}
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-3 text-sm font-mono text-text-primary">{v.plate}</td>
+                                        <td className="px-5 py-3 text-sm text-text-secondary">{v.model}</td>
+                                        <td className="px-5 py-3 text-sm text-text-primary font-medium text-right">{v.km?.toLocaleString("pt-BR")} km</td>
+                                        <td className="px-5 py-3"><StatusBadge status={v.status === "manutencao" ? "Manutenção" : v.status.charAt(0).toUpperCase() + v.status.slice(1)} /></td>
+                                        <td className="px-5 py-3 text-right">
+                                            <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => handleEdit(v)} className="p-1.5 text-text-secondary hover:text-primary hover:bg-primary/10 rounded-md transition-colors">
+                                                    <span className="material-symbols-outlined text-lg">edit</span>
+                                                </button>
+                                                <button onClick={() => handleDelete(v.id)} className="p-1.5 text-text-secondary hover:text-danger hover:bg-red-50 rounded-md transition-colors">
+                                                    <span className="material-symbols-outlined text-lg">delete</span>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

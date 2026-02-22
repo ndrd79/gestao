@@ -1,5 +1,6 @@
 import "./globals.css";
 import LayoutShell from "@/components/LayoutShell";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata = {
   title: "Maxxi Internet — Gestão de Frota",
@@ -23,7 +24,9 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="bg-background text-text-primary">
-        <LayoutShell>{children}</LayoutShell>
+        <AuthProvider>
+          <LayoutShell>{children}</LayoutShell>
+        </AuthProvider>
       </body>
     </html>
   );

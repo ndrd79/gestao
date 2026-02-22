@@ -1,103 +1,139 @@
+"use client";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 import StatusBadge from "@/components/StatusBadge";
-
-const users = [
-    { name: "Carlos Silva", email: "carlos@maxxi.net.br", role: "Gestor", status: "Ativo", initials: "CS", color: "bg-primary" },
-    { name: "Maria Oliveira", email: "maria@maxxi.net.br", role: "Motorista", status: "Ativo", initials: "MO", color: "bg-emerald-500" },
-    { name: "João Mendes", email: "joao@maxxi.net.br", role: "Motorista", status: "Ativo", initials: "JM", color: "bg-amber-500" },
-    { name: "Ana Costa", email: "ana@maxxi.net.br", role: "Admin", status: "Ativo", initials: "AC", color: "bg-violet-500" },
-    { name: "Roberto Dias", email: "roberto@maxxi.net.br", role: "Motorista", status: "Inativo", initials: "RD", color: "bg-slate-400" },
-];
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function UsuariosPage() {
+    const { profile: me } = useAuth();
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [roleFilter, setRoleFilter] = useState("todos");
+
+    useEffect(() => { fetchUsers(); }, []);
+
+    async function fetchUsers() {
+        setLoading(true);
+        const { data } = await supabase.from("profiles").select("*").order("name");
+        setUsers(data || []);
+        setLoading(false);
+    }
+
+    async function handleRoleChange(id, newRole) {
+        await supabase.from("profiles").update({ role: newRole }).eq("id", id);
+        fetchUsers();
+    }
+
+    async function handleStatusToggle(id, currentStatus) {
+        const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
+        await supabase.from("profiles").update({ status: newStatus }).eq("id", id);
+        fetchUsers();
+    }
+
+    const filtered = users.filter((u) => {
+        const matchSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+        const matchRole = roleFilter === "todos" || u.role === roleFilter;
+        return matchSearch && matchRole;
+    });
+
     return (
-        <div className="max-w-5xl mx-auto">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+        <div className="max-w-7xl mx-auto space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-text-primary">Gerenciamento de Usuários</h1>
-                    <p className="text-text-secondary mt-1">Gerencie o acesso e permissões da equipe.</p>
+                    <h1 className="text-2xl font-bold text-text-primary">Usuários</h1>
+                    <p className="text-text-secondary mt-1">Gerencie a equipe do sistema.</p>
                 </div>
-                <button className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-lg shadow-sm text-sm font-bold transition-all active:scale-[0.98]">
-                    <span className="material-symbols-outlined text-[20px]">person_add</span>
-                    Novo Usuário
-                </button>
+                <div className="text-sm text-text-secondary bg-surface px-4 py-2 rounded-lg border border-border">
+                    {users.length} usuários cadastrados
+                </div>
             </div>
 
-            {/* Filters */}
-            <div className="bg-surface rounded-xl shadow-sm border border-border p-4 mb-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-1">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-text-secondary">search</span>
-                        <input
-                            className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg bg-background text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            placeholder="Buscar por nome ou email..."
-                        />
-                    </div>
-                    <select className="px-3 py-2.5 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-primary focus:border-primary">
-                        <option>Todos os Cargos</option>
-                        <option>Admin</option>
-                        <option>Gestor</option>
-                        <option>Motorista</option>
-                    </select>
-                    <select className="px-3 py-2.5 border border-border rounded-lg bg-surface text-sm focus:outline-none focus:ring-primary focus:border-primary">
-                        <option>Todos Status</option>
-                        <option>Ativo</option>
-                        <option>Inativo</option>
-                    </select>
+            {/* Search + Filter */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
+                <div className="relative w-full sm:max-w-sm">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary material-symbols-outlined">search</span>
+                    <input value={search} onChange={(e) => setSearch(e.target.value)} className="block w-full pl-10 pr-3 py-2.5 border border-border rounded-lg bg-surface text-sm placeholder-text-secondary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" placeholder="Buscar usuários..." />
+                </div>
+                <div className="flex gap-2">
+                    {["todos", "admin", "gestor", "motorista"].map((r) => (
+                        <button key={r} onClick={() => setRoleFilter(r)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${roleFilter === r ? "bg-primary text-white" : "bg-surface border border-border text-text-secondary hover:bg-background"}`}>
+                            {r.charAt(0).toUpperCase() + r.slice(1)}
+                        </button>
+                    ))}
                 </div>
             </div>
 
             {/* Table */}
             <div className="bg-surface rounded-xl shadow-sm border border-border overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-background/50 border-b border-border">
-                                <th className="px-5 py-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">Usuário</th>
-                                <th className="px-5 py-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">Email</th>
-                                <th className="px-5 py-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">Cargo</th>
-                                <th className="px-5 py-4 text-xs font-semibold text-text-secondary uppercase tracking-wider">Status</th>
-                                <th className="px-5 py-4 text-xs font-semibold text-text-secondary uppercase tracking-wider text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border">
-                            {users.map((u, i) => (
-                                <tr key={i} className="hover:bg-background/50 transition-colors group">
-                                    <td className="px-5 py-4 whitespace-nowrap">
-                                        <div className="flex items-center gap-3">
-                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold ${u.color}`}>
-                                                {u.initials}
-                                            </div>
-                                            <span className="text-sm font-semibold text-text-primary">{u.name}</span>
-                                        </div>
-                                    </td>
-                                    <td className="px-5 py-4 text-sm text-text-secondary">{u.email}</td>
-                                    <td className="px-5 py-4">
-                                        <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-background text-text-primary border border-border">
-                                            {u.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-4"><StatusBadge status={u.status} /></td>
-                                    <td className="px-5 py-4 text-right">
-                                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-1.5 text-text-secondary hover:text-primary rounded-lg hover:bg-background transition-colors">
-                                                <span className="material-symbols-outlined text-[20px]">edit</span>
-                                            </button>
-                                            <button className="p-1.5 text-text-secondary hover:text-danger rounded-lg hover:bg-red-50 transition-colors">
-                                                <span className="material-symbols-outlined text-[20px]">person_remove</span>
-                                            </button>
-                                        </div>
-                                    </td>
+                {loading ? (
+                    <div className="p-12 text-center text-text-secondary">
+                        <span className="material-symbols-outlined text-4xl animate-pulse">sync</span>
+                        <p className="mt-2 text-sm">Carregando...</p>
+                    </div>
+                ) : filtered.length === 0 ? (
+                    <div className="p-12 text-center text-text-secondary">
+                        <span className="material-symbols-outlined text-4xl">group</span>
+                        <p className="mt-2 text-sm">Nenhum usuário encontrado.</p>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-background/50 border-b border-border">
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase">Usuário</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase">Email</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase">Função</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase">Status</th>
+                                    <th className="px-5 py-3 text-xs font-semibold text-text-secondary uppercase text-right">Ações</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="bg-surface px-5 py-3 flex items-center justify-between border-t border-border">
-                    <p className="text-sm text-text-secondary">
-                        Mostrando <span className="font-medium text-text-primary">1</span> a <span className="font-medium text-text-primary">5</span> de <span className="font-medium text-text-primary">5</span> usuários
-                    </p>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {filtered.map((u) => {
+                                    const initials = u.name?.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) || "??";
+                                    const isMe = me?.id === u.id;
+                                    return (
+                                        <tr key={u.id} className="hover:bg-background/50 transition-colors group">
+                                            <td className="px-5 py-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-light to-primary flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                                                        {initials}
+                                                    </div>
+                                                    <div>
+                                                        <div className="text-sm font-semibold text-text-primary">
+                                                            {u.name} {isMe && <span className="text-xs text-primary-light">(você)</span>}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-5 py-3 text-sm text-text-secondary">{u.email}</td>
+                                            <td className="px-5 py-3">
+                                                <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} disabled={isMe} className="text-xs px-2 py-1 border border-border rounded-md bg-surface focus:outline-none disabled:opacity-50">
+                                                    <option value="admin">Admin</option>
+                                                    <option value="gestor">Gestor</option>
+                                                    <option value="motorista">Motorista</option>
+                                                </select>
+                                            </td>
+                                            <td className="px-5 py-3">
+                                                <StatusBadge status={u.status === "ativo" ? "Ativo" : "Inativo"} />
+                                            </td>
+                                            <td className="px-5 py-3 text-right">
+                                                {!isMe && (
+                                                    <button
+                                                        onClick={() => handleStatusToggle(u.id, u.status)}
+                                                        className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${u.status === "ativo" ? "text-red-600 hover:bg-red-50 border border-red-200" : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200"}`}
+                                                    >
+                                                        {u.status === "ativo" ? "Desativar" : "Ativar"}
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </div>
         </div>
     );

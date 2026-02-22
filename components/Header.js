@@ -1,8 +1,28 @@
 "use client";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export default function Header() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
+    const [showProfileMenu, setShowProfileMenu] = useState(false);
+    const { profile, signOut } = useAuth();
+    const router = useRouter();
+
+    const displayName = profile?.name || "Usuário";
+    const initials = displayName
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+    const roleName =
+        profile?.role === "admin" ? "Administrador" : profile?.role === "gestor" ? "Gestor" : "Motorista";
+
+    async function handleLogout() {
+        await signOut();
+        router.push("/login");
+    }
 
     return (
         <header className="h-16 bg-surface border-b border-border flex items-center justify-between px-4 md:px-8 sticky top-0 z-40">
@@ -30,30 +50,53 @@ export default function Header() {
                     <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-danger rounded-full border-2 border-surface"></span>
                 </button>
 
-                {/* Settings */}
-                <button className="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-lg transition-colors hidden sm:flex">
-                    <span className="material-symbols-outlined text-[22px]">settings</span>
-                </button>
-
                 {/* Divider */}
                 <div className="h-8 w-px bg-border mx-1 hidden sm:block"></div>
 
                 {/* Profile */}
-                <div className="flex items-center gap-3 cursor-pointer group">
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-light to-primary flex items-center justify-center text-white text-xs font-bold ring-2 ring-surface shadow-sm">
-                        AD
-                    </div>
-                    <div className="hidden md:block">
-                        <p className="text-sm font-semibold text-text-primary leading-none group-hover:text-primary transition-colors">
-                            Admin
-                        </p>
-                        <p className="text-xs text-text-secondary mt-0.5">
-                            Gestor de Frota
-                        </p>
-                    </div>
-                    <span className="material-symbols-outlined text-text-secondary text-lg hidden md:block group-hover:text-primary transition-colors">
-                        expand_more
-                    </span>
+                <div className="relative">
+                    <button
+                        onClick={() => setShowProfileMenu(!showProfileMenu)}
+                        className="flex items-center gap-3 cursor-pointer group"
+                    >
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-light to-primary flex items-center justify-center text-white text-xs font-bold ring-2 ring-surface shadow-sm">
+                            {initials}
+                        </div>
+                        <div className="hidden md:block text-left">
+                            <p className="text-sm font-semibold text-text-primary leading-none group-hover:text-primary transition-colors">
+                                {displayName}
+                            </p>
+                            <p className="text-xs text-text-secondary mt-0.5">{roleName}</p>
+                        </div>
+                        <span className="material-symbols-outlined text-text-secondary text-lg hidden md:block group-hover:text-primary transition-colors">
+                            expand_more
+                        </span>
+                    </button>
+
+                    {/* Profile Dropdown */}
+                    {showProfileMenu && (
+                        <>
+                            <div className="fixed inset-0 z-40" onClick={() => setShowProfileMenu(false)}></div>
+                            <div className="absolute right-0 top-full mt-2 w-56 bg-surface rounded-xl shadow-lg border border-border z-50 py-2">
+                                <div className="px-4 py-3 border-b border-border">
+                                    <p className="text-sm font-semibold text-text-primary">{displayName}</p>
+                                    <p className="text-xs text-text-secondary">{profile?.email}</p>
+                                </div>
+                                <button className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-background hover:text-text-primary transition-colors flex items-center gap-2">
+                                    <span className="material-symbols-outlined text-lg">settings</span>
+                                    Configurações
+                                </button>
+                                <div className="border-t border-border my-1"></div>
+                                <button
+                                    onClick={handleLogout}
+                                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-2"
+                                >
+                                    <span className="material-symbols-outlined text-lg">logout</span>
+                                    Sair do Sistema
+                                </button>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
 
@@ -95,6 +138,15 @@ export default function Header() {
                                 </a>
                             ))}
                         </nav>
+                        <div className="absolute bottom-4 left-4 right-4">
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-red-300 hover:bg-white/10 text-sm font-medium transition-colors w-full"
+                            >
+                                <span className="material-symbols-outlined text-[22px]">logout</span>
+                                <span>Sair</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
