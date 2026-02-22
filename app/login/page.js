@@ -1,7 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -9,8 +10,22 @@ export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [logoUrl, setLogoUrl] = useState(null);
+    const [companyName, setCompanyName] = useState("Maxxi Internet");
     const { signIn } = useAuth();
     const router = useRouter();
+
+    useEffect(() => {
+        supabase
+            .from("company_settings")
+            .select("logo_url, company_name")
+            .limit(1)
+            .single()
+            .then(({ data }) => {
+                if (data?.logo_url) setLogoUrl(data.logo_url);
+                if (data?.company_name) setCompanyName(data.company_name);
+            });
+    }, []);
 
     async function handleSubmit(e) {
         e.preventDefault();
@@ -37,12 +52,18 @@ export default function LoginPage() {
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-primary to-primary-hover p-8 text-center">
-                    <div className="w-16 h-16 bg-accent rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                        <span className="material-symbols-outlined text-primary text-3xl">
-                            local_shipping
-                        </span>
-                    </div>
-                    <h1 className="text-white text-xl font-bold">Maxxi Internet</h1>
+                    {logoUrl ? (
+                        <div className="w-20 h-20 rounded-xl mx-auto mb-4 shadow-lg overflow-hidden bg-white/10 p-1">
+                            <img src={logoUrl} alt="Logo" className="w-full h-full object-contain rounded-lg" />
+                        </div>
+                    ) : (
+                        <div className="w-16 h-16 bg-accent rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                            <span className="material-symbols-outlined text-primary text-3xl">
+                                local_shipping
+                            </span>
+                        </div>
+                    )}
+                    <h1 className="text-white text-xl font-bold">{companyName}</h1>
                     <p className="text-white/70 text-sm mt-1">Sistema de Gestão de Frota</p>
                 </div>
 
@@ -133,7 +154,7 @@ export default function LoginPage() {
 
             {/* Footer */}
             <p className="text-center text-white/50 text-xs mt-6">
-                © 2024 Maxxi Internet. Todos os direitos reservados.
+                © 2026 {companyName}. Todos os direitos reservados.
             </p>
         </div>
     );

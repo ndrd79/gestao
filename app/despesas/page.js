@@ -8,6 +8,8 @@ export default function DespesasPage() {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null);
     const [search, setSearch] = useState("");
     const [showTypeManager, setShowTypeManager] = useState(false);
     const [newTypeName, setNewTypeName] = useState("");
@@ -26,66 +28,114 @@ export default function DespesasPage() {
 
     async function fetchData() {
         setLoading(true);
-        const [eRes, tRes, vRes] = await Promise.all([
-            supabase.from("expenses").select("*, vehicle:vehicles(name, plate), expense_type:expense_types(name)").order("date", { ascending: false }),
-            supabase.from("expense_types").select("*").order("name"),
-            supabase.from("vehicles").select("id, name, plate").order("name"),
-        ]);
-        setExpenses(eRes.data || []);
-        setExpenseTypes(tRes.data || []);
-        setVehicles(vRes.data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const [eRes, tRes, vRes] = await Promise.all([
+                supabase.from("expenses").select("*, vehicle:vehicles(name, plate), expense_type:expense_types(name)").order("date", { ascending: false }),
+                supabase.from("expense_types").select("*").order("name"),
+                supabase.from("vehicles").select("id, name, plate").order("name"),
+            ]);
+            if (eRes.error) throw eRes.error;
+            if (tRes.error) throw tRes.error;
+            if (vRes.error) throw vRes.error;
+            setExpenses(eRes.data || []);
+            setExpenseTypes(tRes.data || []);
+            setVehicles(vRes.data || []);
+        } catch (err) {
+            console.error("Erro ao carregar despesas:", err);
+            setError("Erro ao carregar dados. Tente recarregar.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     // ─── Expense CRUD ───
     async function handleSubmit(e) {
         e.preventDefault();
+        setFormError(null);
         setSaving(true);
-        await supabase.from("expenses").insert({
-            vehicle_id: form.vehicle_id || null,
-            expense_type_id: form.expense_type_id,
-            date: form.date,
-            amount: parseFloat(form.amount) || 0,
-            description: form.description,
-            status: form.status,
-        });
-        setForm({ vehicle_id: "", expense_type_id: "", date: "", amount: "", description: "", status: "pago" });
-        setSaving(false);
-        fetchData();
+        try {
+            const { error: insertErr } = await supabase.from("expenses").insert({
+                vehicle_id: form.vehicle_id || null,
+                expense_type_id: form.expense_type_id,
+                date: form.date,
+                amount: parseFloat(form.amount) || 0,
+                description: form.description,
+                status: form.status,
+            });
+            if (insertErr) throw insertErr;
+            setForm({ vehicle_id: "", expense_type_id: "", date: "", amount: "", description: "", status: "pago" });
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao salvar despesa:", err);
+            setFormError(`Erro ao salvar: ${err.message || "Tente novamente."}`);
+        } finally {
+            setSaving(false);
+        }
     }
 
     async function handleDelete(id) {
         if (!confirm("Excluir esta despesa?")) return;
-        await supabase.from("expenses").delete().eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("expenses").delete().eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao excluir despesa:", err);
+            alert(`Erro ao excluir: ${err.message}`);
+        }
     }
 
     async function handleStatusChange(id, newStatus) {
-        await supabase.from("expenses").update({ status: newStatus }).eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("expenses").update({ status: newStatus }).eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao atualizar status:", err);
+            alert(`Erro ao atualizar status: ${err.message}`);
+        }
     }
 
     // ─── Expense Type CRUD ───
     async function handleAddType(e) {
         e.preventDefault();
         if (!newTypeName.trim()) return;
-        await supabase.from("expense_types").insert({ name: newTypeName.trim() });
-        setNewTypeName("");
-        fetchData();
+        try {
+            const { error } = await supabase.from("expense_types").insert({ name: newTypeName.trim() });
+            if (error) throw error;
+            setNewTypeName("");
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao adicionar tipo:", err);
+            alert(`Erro: ${err.message?.includes("duplicate") ? "Este tipo já existe." : err.message}`);
+        }
     }
 
     async function handleUpdateType(id) {
         if (!editingTypeName.trim()) return;
-        await supabase.from("expense_types").update({ name: editingTypeName.trim() }).eq("id", id);
-        setEditingTypeId(null);
-        setEditingTypeName("");
-        fetchData();
+        try {
+            const { error } = await supabase.from("expense_types").update({ name: editingTypeName.trim() }).eq("id", id);
+            if (error) throw error;
+            setEditingTypeId(null);
+            setEditingTypeName("");
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao atualizar tipo:", err);
+            alert(`Erro: ${err.message}`);
+        }
     }
 
     async function handleDeleteType(id) {
-        if (!confirm("Excluir este tipo de despesa?")) return;
-        await supabase.from("expense_types").delete().eq("id", id);
-        fetchData();
+        if (!confirm("Excluir este tipo de despesa? As despesas com este tipo ficarão sem categoria.")) return;
+        try {
+            const { error } = await supabase.from("expense_types").delete().eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao excluir tipo:", err);
+            alert(`Erro: ${err.message}`);
+        }
     }
 
     // ─── Cálculos ───

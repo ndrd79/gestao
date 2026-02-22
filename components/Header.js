@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/navigation";
@@ -95,10 +96,10 @@ export default function Header() {
                                     <p className="text-sm font-semibold text-text-primary">{displayName}</p>
                                     <p className="text-xs text-text-secondary">{profile?.email}</p>
                                 </div>
-                                <a href="/configuracoes" className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-background hover:text-text-primary transition-colors flex items-center gap-2">
+                                <Link href="/configuracoes" onClick={() => setShowProfileMenu(false)} className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-background hover:text-text-primary transition-colors flex items-center gap-2">
                                     <span className="material-symbols-outlined text-lg">settings</span>
                                     Configurações
-                                </a>
+                                </Link>
                                 <div className="border-t border-border my-1"></div>
                                 <button
                                     onClick={handleLogout}
@@ -141,7 +142,7 @@ export default function Header() {
                                 { href: "/relatorios", icon: "bar_chart", label: "Relatórios" },
                                 { href: "/usuarios", icon: "group", label: "Usuários" },
                             ].map((item) => (
-                                <a
+                                <Link
                                     key={item.href}
                                     href={item.href}
                                     className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white/70 hover:bg-white/10 hover:text-white text-sm font-medium transition-colors"
@@ -149,7 +150,7 @@ export default function Header() {
                                 >
                                     <span className="material-symbols-outlined text-[22px]">{item.icon}</span>
                                     <span>{item.label}</span>
-                                </a>
+                                </Link>
                             ))}
                         </nav>
                         <div className="absolute bottom-4 left-4 right-4">

@@ -14,48 +14,87 @@ export default function AgendaPage() {
     const [currentDate, setCurrentDate] = useState(new Date());
     const [form, setForm] = useState({ vehicle_id: "", driver_id: "", start_date: "", end_date: "", purpose: "" });
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null);
 
     useEffect(() => { fetchData(); }, []);
 
     async function fetchData() {
         setLoading(true);
-        const [eRes, vRes, pRes] = await Promise.all([
-            supabase.from("schedule").select("*, vehicle:vehicles(name, plate), driver:profiles(name)").order("start_date"),
-            supabase.from("vehicles").select("id, name, plate").order("name"),
-            supabase.from("profiles").select("id, name").order("name"),
-        ]);
-        setEvents(eRes.data || []);
-        setVehicles(vRes.data || []);
-        setProfiles(pRes.data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const [eRes, vRes, pRes] = await Promise.all([
+                supabase.from("schedule").select("*, vehicle:vehicles(name, plate), driver:profiles(name)").order("start_date"),
+                supabase.from("vehicles").select("id, name, plate").order("name"),
+                supabase.from("profiles").select("id, name").order("name"),
+            ]);
+            if (eRes.error) throw eRes.error;
+            if (vRes.error) throw vRes.error;
+            if (pRes.error) throw pRes.error;
+            setEvents(eRes.data || []);
+            setVehicles(vRes.data || []);
+            setProfiles(pRes.data || []);
+        } catch (err) {
+            console.error("Erro ao carregar agenda:", err);
+            setError("Erro ao carregar dados. Tente recarregar.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setFormError(null);
+
+        // Validação: data fim >= data início
+        if (form.start_date && form.end_date && new Date(form.end_date) < new Date(form.start_date)) {
+            setFormError("A data de término deve ser posterior à data de início.");
+            return;
+        }
+
         setSaving(true);
-        await supabase.from("schedule").insert({
-            vehicle_id: form.vehicle_id,
-            driver_id: form.driver_id || null,
-            start_date: form.start_date,
-            end_date: form.end_date,
-            purpose: form.purpose,
-            status: "pendente",
-        });
-        setForm({ vehicle_id: "", driver_id: "", start_date: "", end_date: "", purpose: "" });
-        setSaving(false);
-        setShowForm(false);
-        fetchData();
+        try {
+            const { error: insertErr } = await supabase.from("schedule").insert({
+                vehicle_id: form.vehicle_id,
+                driver_id: form.driver_id || null,
+                start_date: form.start_date,
+                end_date: form.end_date,
+                purpose: form.purpose,
+                status: "pendente",
+            });
+            if (insertErr) throw insertErr;
+            setForm({ vehicle_id: "", driver_id: "", start_date: "", end_date: "", purpose: "" });
+            setShowForm(false);
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao salvar agendamento:", err);
+            setFormError(`Erro ao salvar: ${err.message || "Tente novamente."}`);
+        } finally {
+            setSaving(false);
+        }
     }
 
     async function handleStatusChange(id, newStatus) {
-        await supabase.from("schedule").update({ status: newStatus }).eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("schedule").update({ status: newStatus }).eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao atualizar status:", err);
+            alert(`Erro ao atualizar: ${err.message}`);
+        }
     }
 
     async function handleDelete(id) {
         if (!confirm("Excluir este agendamento?")) return;
-        await supabase.from("schedule").delete().eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("schedule").delete().eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao excluir agendamento:", err);
+            alert(`Erro ao excluir: ${err.message}`);
+        }
     }
 
     // Calendar helpers

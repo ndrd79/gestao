@@ -34,6 +34,8 @@ export default function ManutencaoPage() {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null);
     const [search, setSearch] = useState("");
     const [selectedService, setSelectedService] = useState("");
     const [customService, setCustomService] = useState("");
@@ -45,43 +47,72 @@ export default function ManutencaoPage() {
 
     async function fetchData() {
         setLoading(true);
-        const [mRes, vRes] = await Promise.all([
-            supabase.from("maintenance").select("*, vehicle:vehicles(name, plate)").order("date", { ascending: false }),
-            supabase.from("vehicles").select("id, name, plate").order("name"),
-        ]);
-        setRecords(mRes.data || []);
-        setVehicles(vRes.data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const [mRes, vRes] = await Promise.all([
+                supabase.from("maintenance").select("*, vehicle:vehicles(name, plate)").order("date", { ascending: false }),
+                supabase.from("vehicles").select("id, name, plate").order("name"),
+            ]);
+            if (mRes.error) throw mRes.error;
+            if (vRes.error) throw vRes.error;
+            setRecords(mRes.data || []);
+            setVehicles(vRes.data || []);
+        } catch (err) {
+            console.error("Erro ao carregar manutenções:", err);
+            setError("Erro ao carregar dados. Tente recarregar.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setFormError(null);
         setSaving(true);
         const serviceType = selectedService === "Outro" ? customService : selectedService;
-        await supabase.from("maintenance").insert({
-            vehicle_id: form.vehicle_id,
-            service_type: serviceType,
-            date: form.date,
-            cost: parseFloat(form.cost) || 0,
-            description: form.description,
-            status: form.status,
-        });
-        setForm({ vehicle_id: "", service_type: "", date: "", cost: "", description: "", status: "pendente" });
-        setSelectedService("");
-        setCustomService("");
-        setSaving(false);
-        fetchData();
+        try {
+            const { error: insertErr } = await supabase.from("maintenance").insert({
+                vehicle_id: form.vehicle_id,
+                service_type: serviceType,
+                date: form.date,
+                cost: parseFloat(form.cost) || 0,
+                description: form.description,
+                status: form.status,
+            });
+            if (insertErr) throw insertErr;
+            setForm({ vehicle_id: "", service_type: "", date: "", cost: "", description: "", status: "pendente" });
+            setSelectedService("");
+            setCustomService("");
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao salvar manutenção:", err);
+            setFormError(`Erro ao salvar: ${err.message || "Tente novamente."}`);
+        } finally {
+            setSaving(false);
+        }
     }
 
     async function handleStatusChange(id, newStatus) {
-        await supabase.from("maintenance").update({ status: newStatus }).eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("maintenance").update({ status: newStatus }).eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao atualizar status:", err);
+            alert(`Erro ao atualizar status: ${err.message}`);
+        }
     }
 
     async function handleDelete(id) {
         if (!confirm("Excluir esta manutenção?")) return;
-        await supabase.from("maintenance").delete().eq("id", id);
-        fetchData();
+        try {
+            const { error } = await supabase.from("maintenance").delete().eq("id", id);
+            if (error) throw error;
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao excluir manutenção:", err);
+            alert(`Erro ao excluir: ${err.message}`);
+        }
     }
 
     const totalCost = records.reduce((s, r) => s + Number(r.cost), 0);

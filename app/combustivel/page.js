@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import StatusBadge from "@/components/StatusBadge";
 import KPICard from "@/components/KPICard";
@@ -9,6 +9,8 @@ export default function CombustivelPage() {
     const [vehicles, setVehicles] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null);
     const [search, setSearch] = useState("");
     const [vehicleFilter, setVehicleFilter] = useState("todos");
     const [form, setForm] = useState({
@@ -21,43 +23,84 @@ export default function CombustivelPage() {
 
     async function fetchData() {
         setLoading(true);
-        const [fuelRes, vehRes] = await Promise.all([
-            supabase
-                .from("fuel_records")
-                .select("*, vehicle:vehicles(name, plate)")
-                .order("date", { ascending: false }),
-            supabase.from("vehicles").select("id, name, plate").order("name"),
-        ]);
-        setRecords(fuelRes.data || []);
-        setVehicles(vehRes.data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const [fuelRes, vehRes] = await Promise.all([
+                supabase
+                    .from("fuel_records")
+                    .select("*, vehicle:vehicles(name, plate)")
+                    .order("date", { ascending: false }),
+                supabase.from("vehicles").select("id, name, plate, km").order("name"),
+            ]);
+            if (fuelRes.error) throw fuelRes.error;
+            if (vehRes.error) throw vehRes.error;
+            setRecords(fuelRes.data || []);
+            setVehicles(vehRes.data || []);
+        } catch (err) {
+            console.error("Erro ao carregar combustível:", err);
+            setError("Erro ao carregar dados. Tente recarregar.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
-        setSaving(true);
+        setFormError(null);
+
         const liters = parseFloat(form.liters);
         const total = parseFloat(form.total);
+        const newKm = parseInt(form.km);
 
-        await supabase.from("fuel_records").insert({
-            vehicle_id: form.vehicle_id,
-            date: form.date,
-            liters,
-            price_per_liter: parseFloat((total / liters).toFixed(2)),
-            total,
-            km: parseInt(form.km),
-            status: "pendente",
-        });
+        // Validação: litros deve ser positivo
+        if (!liters || liters <= 0) {
+            setFormError("A quantidade de litros deve ser maior que zero.");
+            return;
+        }
 
-        // Atualizar KM do veículo
-        await supabase
-            .from("vehicles")
-            .update({ km: parseInt(form.km) })
-            .eq("id", form.vehicle_id);
+        // Validação: valor total deve ser positivo
+        if (!total || total <= 0) {
+            setFormError("O valor total deve ser maior que zero.");
+            return;
+        }
 
-        setForm({ vehicle_id: "", date: "", liters: "", total: "", km: "" });
-        setSaving(false);
-        fetchData();
+        // Validação: KM não pode regredir
+        const selectedVehicle = vehicles.find((v) => v.id === form.vehicle_id);
+        if (selectedVehicle && newKm < (selectedVehicle.km || 0)) {
+            setFormError(`O KM informado (${newKm.toLocaleString("pt-BR")}) é menor que o KM atual do veículo (${(selectedVehicle.km || 0).toLocaleString("pt-BR")}). Verifique o valor digitado.`);
+            return;
+        }
+
+        setSaving(true);
+        try {
+            const { error: insertErr } = await supabase.from("fuel_records").insert({
+                vehicle_id: form.vehicle_id,
+                date: form.date,
+                liters,
+                price_per_liter: parseFloat((total / liters).toFixed(2)),
+                total,
+                km: newKm,
+                status: "pendente",
+            });
+            if (insertErr) throw insertErr;
+
+            // Atualizar KM do veículo (somente se maior que o atual)
+            if (!selectedVehicle || newKm >= (selectedVehicle.km || 0)) {
+                const { error: updateErr } = await supabase
+                    .from("vehicles")
+                    .update({ km: newKm })
+                    .eq("id", form.vehicle_id);
+                if (updateErr) throw updateErr;
+            }
+
+            setForm({ vehicle_id: "", date: "", liters: "", total: "", km: "" });
+            fetchData();
+        } catch (err) {
+            console.error("Erro ao salvar abastecimento:", err);
+            setFormError(`Erro ao salvar: ${err.message || "Tente novamente."}`);
+        } finally {
+            setSaving(false);
+        }
     }
 
     // --- Métricas por veículo ---
@@ -82,20 +125,29 @@ export default function CombustivelPage() {
         });
     }
 
-    const vehicleMetrics = calcVehicleMetrics();
-    const totalLiters = records.reduce((s, r) => s + Number(r.liters), 0);
-    const totalSpent = records.reduce((s, r) => s + Number(r.total), 0);
+    const vehicleMetrics = useMemo(() => calcVehicleMetrics(), [records]);
+    const totalLiters = useMemo(() => records.reduce((s, r) => s + Number(r.liters || 0), 0), [records]);
+    const totalSpent = useMemo(() => records.reduce((s, r) => s + Number(r.total || 0), 0), [records]);
     const avgPrice = totalLiters > 0 ? (totalSpent / totalLiters).toFixed(2) : "0";
 
-    const filtered = records.filter((r) => {
+    const filtered = useMemo(() => records.filter((r) => {
         const vName = r.vehicle?.name?.toLowerCase() || "";
         const matchSearch = vName.includes(search.toLowerCase());
         const matchVehicle = vehicleFilter === "todos" || r.vehicle_id === vehicleFilter;
         return matchSearch && matchVehicle;
-    });
+    }), [records, search, vehicleFilter]);
 
     return (
         <div className="max-w-7xl mx-auto space-y-8">
+            {/* Error Banner */}
+            {error && (
+                <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                    <span className="material-symbols-outlined text-lg">error</span>
+                    {error}
+                    <button onClick={fetchData} className="ml-auto text-red-700 underline font-medium">Tentar novamente</button>
+                </div>
+            )}
+
             <div>
                 <h1 className="text-2xl font-bold text-text-primary">Gestão de Combustível</h1>
                 <p className="text-text-secondary mt-1">Registre e acompanhe abastecimentos da frota.</p>
@@ -167,12 +219,22 @@ export default function CombustivelPage() {
                     <h2 className="text-lg font-bold text-text-primary">Registrar Abastecimento</h2>
                 </div>
                 <div className="p-6">
+                    {/* Form Error */}
+                    {formError && (
+                        <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm flex items-center gap-2">
+                            <span className="material-symbols-outlined text-lg">warning</span>
+                            {formError}
+                            <button onClick={() => setFormError(null)} className="ml-auto text-red-700 hover:text-red-900">
+                                <span className="material-symbols-outlined text-lg">close</span>
+                            </button>
+                        </div>
+                    )}
                     <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-5">
                         <div className="lg:col-span-2">
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">Veículo</label>
-                            <select value={form.vehicle_id} onChange={(e) => setForm({ ...form, vehicle_id: e.target.value })} required className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <select value={form.vehicle_id} onChange={(e) => { setForm({ ...form, vehicle_id: e.target.value }); setFormError(null); }} required className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                 <option value="">Selecionar veículo</option>
-                                {vehicles.map((v) => (<option key={v.id} value={v.id}>{v.name} - {v.plate}</option>))}
+                                {vehicles.map((v) => (<option key={v.id} value={v.id}>{v.name} - {v.plate} (KM: {(v.km || 0).toLocaleString("pt-BR")})</option>))}
                             </select>
                         </div>
                         <div>
@@ -181,15 +243,19 @@ export default function CombustivelPage() {
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">Litros</label>
-                            <input type="number" step="0.01" value={form.liters} onChange={(e) => setForm({ ...form, liters: e.target.value })} required placeholder="0" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            <input type="number" step="0.01" min="0.01" value={form.liters} onChange={(e) => setForm({ ...form, liters: e.target.value })} required placeholder="0" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">Valor Total (R$)</label>
-                            <input type="number" step="0.01" value={form.total} onChange={(e) => setForm({ ...form, total: e.target.value })} required placeholder="0,00" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            <input type="number" step="0.01" min="0.01" value={form.total} onChange={(e) => setForm({ ...form, total: e.target.value })} required placeholder="0,00" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
                         </div>
                         <div>
                             <label className="block text-sm font-semibold text-text-primary mb-1.5">KM Atual</label>
-                            <input type="number" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} required placeholder="0" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            <input type="number" min="1" value={form.km} onChange={(e) => setForm({ ...form, km: e.target.value })} required placeholder="0" className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary" />
+                            {form.vehicle_id && (() => {
+                                const sv = vehicles.find((v) => v.id === form.vehicle_id);
+                                return sv ? <p className="text-xs text-text-secondary mt-1">KM atual: {(sv.km || 0).toLocaleString("pt-BR")} km</p> : null;
+                            })()}
                         </div>
                         <div className="lg:col-span-6 flex justify-end pt-2">
                             <button type="submit" disabled={saving} className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-white px-6 py-2.5 rounded-lg text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-60">

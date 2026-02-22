@@ -10,25 +10,50 @@ export default function UsuariosPage() {
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState("todos");
+    const [error, setError] = useState(null);
+
+    const isAdmin = me?.role === "admin";
 
     useEffect(() => { fetchUsers(); }, []);
 
     async function fetchUsers() {
         setLoading(true);
-        const { data } = await supabase.from("profiles").select("*").order("name");
-        setUsers(data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const { data, error: fetchErr } = await supabase.from("profiles").select("*").order("name");
+            if (fetchErr) throw fetchErr;
+            setUsers(data || []);
+        } catch (err) {
+            console.error("Erro ao carregar usuários:", err);
+            setError("Erro ao carregar usuários.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleRoleChange(id, newRole) {
-        await supabase.from("profiles").update({ role: newRole }).eq("id", id);
-        fetchUsers();
+        if (!isAdmin) { alert("Apenas administradores podem alterar funções."); return; }
+        try {
+            const { error } = await supabase.from("profiles").update({ role: newRole }).eq("id", id);
+            if (error) throw error;
+            fetchUsers();
+        } catch (err) {
+            console.error("Erro ao alterar função:", err);
+            alert(`Erro: ${err.message}`);
+        }
     }
 
     async function handleStatusToggle(id, currentStatus) {
+        if (!isAdmin) { alert("Apenas administradores podem alterar status."); return; }
         const newStatus = currentStatus === "ativo" ? "inativo" : "ativo";
-        await supabase.from("profiles").update({ status: newStatus }).eq("id", id);
-        fetchUsers();
+        try {
+            const { error } = await supabase.from("profiles").update({ status: newStatus }).eq("id", id);
+            if (error) throw error;
+            fetchUsers();
+        } catch (err) {
+            console.error("Erro ao alterar status:", err);
+            alert(`Erro: ${err.message}`);
+        }
     }
 
     const filtered = users.filter((u) => {
@@ -48,6 +73,14 @@ export default function UsuariosPage() {
                     {users.length} usuários cadastrados
                 </div>
             </div>
+
+            {/* Admin-only notice */}
+            {!isAdmin && (
+                <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm flex items-center gap-2">
+                    <span className="material-symbols-outlined text-lg">info</span>
+                    Apenas administradores podem alterar funções e status de usuários.
+                </div>
+            )}
 
             {/* Search + Filter */}
             <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
@@ -108,7 +141,7 @@ export default function UsuariosPage() {
                                             </td>
                                             <td className="px-5 py-3 text-sm text-text-secondary">{u.email}</td>
                                             <td className="px-5 py-3">
-                                                <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} disabled={isMe} className="text-xs px-2 py-1 border border-border rounded-md bg-surface focus:outline-none disabled:opacity-50">
+                                                <select value={u.role} onChange={(e) => handleRoleChange(u.id, e.target.value)} disabled={isMe || !isAdmin} className="text-xs px-2 py-1 border border-border rounded-md bg-surface focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed">
                                                     <option value="admin">Admin</option>
                                                     <option value="gestor">Gestor</option>
                                                     <option value="motorista">Motorista</option>
@@ -118,7 +151,7 @@ export default function UsuariosPage() {
                                                 <StatusBadge status={u.status === "ativo" ? "Ativo" : "Inativo"} />
                                             </td>
                                             <td className="px-5 py-3 text-right">
-                                                {!isMe && (
+                                                {!isMe && isAdmin && (
                                                     <button
                                                         onClick={() => handleStatusToggle(u.id, u.status)}
                                                         className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors ${u.status === "ativo" ? "text-red-600 hover:bg-red-50 border border-red-200" : "text-emerald-600 hover:bg-emerald-50 border border-emerald-200"}`}
@@ -135,6 +168,6 @@ export default function UsuariosPage() {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 }

@@ -12,6 +12,8 @@ export default function VeiculosPage() {
     const [editingId, setEditingId] = useState(null);
     const [form, setForm] = useState({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" });
     const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [formError, setFormError] = useState(null);
 
     useEffect(() => {
         fetchVehicles();
@@ -19,17 +21,25 @@ export default function VeiculosPage() {
 
     async function fetchVehicles() {
         setLoading(true);
-        const { data, error } = await supabase
-            .from("vehicles")
-            .select("*, driver:profiles(name)")
-            .order("created_at", { ascending: false });
-
-        if (!error) setVehicles(data || []);
-        setLoading(false);
+        setError(null);
+        try {
+            const { data, error: fetchErr } = await supabase
+                .from("vehicles")
+                .select("*, driver:profiles(name)")
+                .order("created_at", { ascending: false });
+            if (fetchErr) throw fetchErr;
+            setVehicles(data || []);
+        } catch (err) {
+            console.error("Erro ao carregar veículos:", err);
+            setError("Erro ao carregar veículos. Tente recarregar.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     async function handleSubmit(e) {
         e.preventDefault();
+        setFormError(null);
         setSaving(true);
         const payload = {
             name: form.name,
@@ -40,17 +50,26 @@ export default function VeiculosPage() {
             status: form.status,
         };
 
-        if (editingId) {
-            await supabase.from("vehicles").update(payload).eq("id", editingId);
-        } else {
-            await supabase.from("vehicles").insert(payload);
-        }
+        try {
+            if (editingId) {
+                const { error } = await supabase.from("vehicles").update(payload).eq("id", editingId);
+                if (error) throw error;
+            } else {
+                const { error } = await supabase.from("vehicles").insert(payload);
+                if (error) throw error;
+            }
 
-        setShowForm(false);
-        setEditingId(null);
-        setForm({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" });
-        setSaving(false);
-        fetchVehicles();
+            setShowForm(false);
+            setEditingId(null);
+            setForm({ name: "", plate: "", model: "", year: "", km: 0, status: "ativo" });
+            fetchVehicles();
+        } catch (err) {
+            console.error("Erro ao salvar veículo:", err);
+            const msg = err.message?.includes("duplicate") ? "Já existe um veículo com essa placa." : `Erro ao salvar: ${err.message || "Tente novamente."}`;
+            setFormError(msg);
+        } finally {
+            setSaving(false);
+        }
     }
 
     function handleEdit(v) {
@@ -60,9 +79,15 @@ export default function VeiculosPage() {
     }
 
     async function handleDelete(id) {
-        if (!confirm("Tem certeza que deseja excluir este veículo?")) return;
-        await supabase.from("vehicles").delete().eq("id", id);
-        fetchVehicles();
+        if (!confirm("ATENÇÃO: Excluir este veículo apagará permanentemente todo o histórico de combustível, manutenções, despesas e agendamentos associados.\n\nDeseja continuar?")) return;
+        try {
+            const { error } = await supabase.from("vehicles").delete().eq("id", id);
+            if (error) throw error;
+            fetchVehicles();
+        } catch (err) {
+            console.error("Erro ao excluir veículo:", err);
+            alert(`Erro ao excluir: ${err.message}`);
+        }
     }
 
     const filtered = vehicles.filter((v) => {
