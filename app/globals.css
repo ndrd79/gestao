@@ -21,6 +21,25 @@
   --font-body: "Inter", system-ui, sans-serif;
 }
 
+/* ===== Dark Mode Overrides ===== */
+.dark {
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-dark: #0f172a;
+  --color-border: #334155;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-primary-hover: #003399;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}
+
 /* ===== Base ===== */
 body {
   font-family: var(--font-body);
@@ -33,13 +52,16 @@ body {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
@@ -50,6 +72,7 @@ body {
   width: 0;
   overflow: hidden;
 }
+
 .sidebar-expanded .sidebar-text {
   opacity: 1;
   width: auto;
@@ -59,6 +82,15 @@ body {
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }
+
 .material-symbols-outlined.filled {
   font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ===== Dark mode transitions ===== */
+body,
+.bg-surface,
+.bg-background,
+.border-border {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }

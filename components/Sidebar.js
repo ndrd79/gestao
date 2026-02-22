@@ -11,6 +11,7 @@ const navItems = [
   { href: "/agenda", icon: "calendar_month", label: "Agenda" },
   { href: "/relatorios", icon: "bar_chart", label: "Relatórios" },
   { href: "/usuarios", icon: "group", label: "Usuários" },
+  { href: "/configuracoes", icon: "settings", label: "Configurações" },
 ];
 
 export default function Sidebar() {
@@ -19,9 +20,8 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col bg-primary text-white border-r border-primary-hover transition-all duration-300 ease-in-out flex-shrink-0 h-screen sticky top-0 ${
-        collapsed ? "w-[72px]" : "w-64"
-      }`}
+      className={`hidden lg:flex flex-col bg-primary text-white border-r border-primary-hover transition-all duration-300 ease-in-out flex-shrink-0 h-screen sticky top-0 ${collapsed ? "w-[72px]" : "w-64"
+        }`}
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-white/10">
@@ -52,17 +52,15 @@ export default function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 group ${
-                isActive
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 group ${isActive
                   ? "bg-white/20 text-accent shadow-sm"
                   : "text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
+                }`}
               title={collapsed ? item.label : undefined}
             >
               <span
-                className={`material-symbols-outlined text-[22px] flex-shrink-0 ${
-                  isActive ? "filled" : ""
-                }`}
+                className={`material-symbols-outlined text-[22px] flex-shrink-0 ${isActive ? "filled" : ""
+                  }`}
               >
                 {item.icon}
               </span>

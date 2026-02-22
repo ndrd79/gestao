@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useRouter } from "next/navigation";
 
 export default function Header() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const { profile, signOut } = useAuth();
+    const { theme, toggleTheme } = useTheme();
     const router = useRouter();
 
     const displayName = profile?.name || "Usuário";
@@ -44,6 +46,17 @@ export default function Header() {
 
             {/* Right: Actions */}
             <div className="flex items-center gap-3">
+                {/* Theme Toggle */}
+                <button
+                    onClick={toggleTheme}
+                    className="p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                    title={theme === "dark" ? "Modo Claro" : "Modo Escuro"}
+                >
+                    <span className="material-symbols-outlined text-[22px]">
+                        {theme === "dark" ? "light_mode" : "dark_mode"}
+                    </span>
+                </button>
+
                 {/* Notifications */}
                 <button className="relative p-2 text-text-secondary hover:text-primary hover:bg-primary/5 rounded-lg transition-colors">
                     <span className="material-symbols-outlined text-[22px]">notifications</span>
@@ -82,10 +95,10 @@ export default function Header() {
                                     <p className="text-sm font-semibold text-text-primary">{displayName}</p>
                                     <p className="text-xs text-text-secondary">{profile?.email}</p>
                                 </div>
-                                <button className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-background hover:text-text-primary transition-colors flex items-center gap-2">
+                                <a href="/configuracoes" className="w-full px-4 py-2.5 text-left text-sm text-text-secondary hover:bg-background hover:text-text-primary transition-colors flex items-center gap-2">
                                     <span className="material-symbols-outlined text-lg">settings</span>
                                     Configurações
-                                </button>
+                                </a>
                                 <div className="border-t border-border my-1"></div>
                                 <button
                                     onClick={handleLogout}
