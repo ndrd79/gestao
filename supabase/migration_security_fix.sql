@@ -279,19 +279,23 @@ CREATE POLICY "expense_types_delete_admin"
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 8. RLS — company_settings
---    Qualquer autenticado pode ler
+--    Qualquer pessoa pode ler (inclusive anon, para exibir logo no login)
 --    Apenas admin pode alterar
 -- ─────────────────────────────────────────────────────────────────────
 
 DROP POLICY IF EXISTS "Authenticated users can read settings" ON company_settings;
 DROP POLICY IF EXISTS "Authenticated can read settings" ON company_settings;
+DROP POLICY IF EXISTS "company_settings_select_all" ON company_settings;
 DROP POLICY IF EXISTS "Authenticated users can update settings" ON company_settings;
 DROP POLICY IF EXISTS "Authenticated can update settings" ON company_settings;
+DROP POLICY IF EXISTS "company_settings_update_admin" ON company_settings;
 DROP POLICY IF EXISTS "Authenticated users can insert settings" ON company_settings;
 DROP POLICY IF EXISTS "Authenticated can insert settings" ON company_settings;
+DROP POLICY IF EXISTS "company_settings_insert_admin" ON company_settings;
 
-CREATE POLICY "company_settings_select_all"
-    ON company_settings FOR SELECT TO authenticated
+-- Leitura pública (anon + authenticated) para logo no login
+CREATE POLICY "company_settings_select_public"
+    ON company_settings FOR SELECT TO anon, authenticated
     USING (true);
 
 CREATE POLICY "company_settings_update_admin"
