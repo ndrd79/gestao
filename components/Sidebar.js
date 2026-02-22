@@ -36,8 +36,9 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`hidden lg:flex flex-col bg-primary text-white border-r border-primary-hover transition-all duration-300 ease-in-out flex-shrink-0 h-screen sticky top-0 ${collapsed ? "w-[72px]" : "w-64"
+      className={`hidden lg:flex flex-col text-white border-r border-[#001a4f] transition-all duration-300 ease-in-out flex-shrink-0 h-screen sticky top-0 ${collapsed ? "w-[72px]" : "w-64"
         }`}
+      style={{ backgroundColor: "#002469" }}
     >
       {/* Logo */}
       <div className="h-16 flex items-center px-4 border-b border-white/10">
