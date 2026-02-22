@@ -329,18 +329,18 @@ export default function DiarioBordoPage() {
                                 <p className="text-lg font-bold">{myActiveTrip.vehicle?.name} — {myActiveTrip.vehicle?.plate}</p>
                                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-sm text-white/90">
                                     {myActiveTrip.client_name && <span>👤 {myActiveTrip.client_name}</span>}
-                                    <span className="flex items-center gap-1">
-                                        📍 {myActiveTrip.destination}
-                                        <button
-                                            onClick={() => openInMaps(myActiveTrip.address, myActiveTrip.destination)}
-                                            className="ml-1 bg-white/20 hover:bg-white/30 p-1 rounded-md transition-colors"
-                                            title="Como chegar (Google Maps)"
-                                        >
-                                            <span className="material-symbols-outlined text-[16px]">map</span>
-                                        </button>
-                                    </span>
+                                    <span>📍 {myActiveTrip.destination}</span>
                                     <span>🕐 {formatTime(myActiveTrip.time_start)}</span>
                                     <span>📏 {myActiveTrip.km_start?.toLocaleString("pt-BR")} km</span>
+                                </div>
+                                <div className="mt-3 flex gap-2">
+                                    <button
+                                        onClick={() => openInMaps(myActiveTrip.address, myActiveTrip.destination)}
+                                        className="flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">directions</span>
+                                        Abrir GPS (Maps)
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -463,7 +463,17 @@ export default function DiarioBordoPage() {
                                                     <td colSpan={7} className="px-6 py-4">
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                             <div><span className="text-text-secondary block mb-1">Cliente/Motivo</span><p className="font-bold">{t.client_name || "—"} / {t.reason || "—"}</p></div>
-                                                            <div><span className="text-text-secondary block mb-1">Endereço Completo</span><p className="font-bold">{t.address || "—"}, {t.destination}</p></div>
+                                                            <div>
+                                                                <span className="text-text-secondary block mb-1">Endereço Completo</span>
+                                                                <p className="font-bold">{t.address || "—"}, {t.destination}</p>
+                                                                <button
+                                                                    onClick={() => openInMaps(t.address, t.destination)}
+                                                                    className="mt-1 flex items-center gap-1 text-primary hover:underline font-bold"
+                                                                >
+                                                                    <span className="material-symbols-outlined text-[14px]">map</span>
+                                                                    Ver no Google Maps
+                                                                </button>
+                                                            </div>
                                                             <div><span className="text-text-secondary block mb-1">KM Inicial → Final</span><p className="font-bold">{t.km_start?.toLocaleString()} → {t.km_end?.toLocaleString() || "..."}</p></div>
                                                             {t.notes && <div className="col-span-2 md:col-span-4"><span className="text-text-secondary block mb-1">Observações</span><p className="italic">{t.notes}</p></div>}
                                                         </div>
